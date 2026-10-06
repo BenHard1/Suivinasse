@@ -46,7 +46,7 @@ Les spiritueux sont toujours considérés comme prêts. Le bouton **✨ Estimer 
 
 La reconnaissance photo et les accords nécessitent une clé API personnelle, à saisir une fois dans **Réglages → Intelligence artificielle** (enregistrée dans le compte, ou sur le téléphone sans compte) ; les requêtes partent directement du navigateur vers le fournisseur choisi.
 
-- **Google Gemini (par défaut, gratuit)** : clé sur https://aistudio.google.com/apikey (compte Google, sans carte bancaire). Quotas journaliers limités mais suffisants pour un usage personnel ; sur l'offre gratuite, Google peut utiliser les données envoyées pour améliorer ses modèles. Modèle `gemini-flash-latest` (repli sur `gemini-2.5-flash`), recherche Google pour les accords.
+- **Google Gemini (par défaut, gratuit)** : clé sur https://aistudio.google.com/apikey (compte Google, sans carte bancaire). Quotas journaliers limités mais suffisants pour un usage personnel ; sur l'offre gratuite, Google peut utiliser les données envoyées pour améliorer ses modèles. Modèle `gemini-flash-latest`, avec nouvel essai puis repli automatique sur `gemini-2.5-flash`, `gemini-flash-lite-latest` et `gemini-2.5-flash-lite` en cas de surcharge ou de quota épuisé ; recherche Google pour les accords.
 - **Claude (payant à l'usage)** : clé sur https://console.anthropic.com/ avec du crédit. Modèle `claude-opus-5-5`, recherche web pour les accords. Un abonnement Claude.ai (Pro/Max) ne fournit pas de clé API.
 
 ## Mettre en ligne (GitHub Pages)

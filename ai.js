@@ -44,8 +44,27 @@ async function claudeComplete(key, { system, text, image, web, effort }) {
 
 // ---------- Gemini ----------
 // « gemini-flash-latest » suit automatiquement le dernier modèle Flash (offre gratuite).
-const GEMINI_MODELS = ["gemini-flash-latest", "gemini-2.5-flash"];
+// Si un modèle est surchargé (5xx) ou que son quota gratuit est épuisé (429), on essaie le suivant :
+// les quotas gratuits sont comptés séparément pour chaque modèle.
+const GEMINI_MODELS = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-flash-lite-latest", "gemini-2.5-flash-lite"];
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function geminiCall(key, model, body) {
+  const res = await fetch(`${GEMINI_URL}${model}:generateContent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.error?.message || `Erreur ${res.status}`);
+    err.status = res.status;
+    err.reason = data.error?.status || data.error?.details?.[0]?.reason;
+    throw err;
+  }
+  return data;
+}
 
 async function geminiComplete(key, { system, text, image, json, web }) {
   const parts = [];
@@ -58,18 +77,20 @@ async function geminiComplete(key, { system, text, image, json, web }) {
 
   let lastErr;
   for (const model of GEMINI_MODELS) {
-    const res = await fetch(`${GEMINI_URL}${model}:generateContent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.status === 404) { lastErr = data.error; continue; } // modèle indisponible : essai suivant
-    if (!res.ok) {
-      const err = new Error(data.error?.message || `Erreur ${res.status}`);
-      err.status = res.status;
-      err.reason = data.error?.status || data.error?.details?.[0]?.reason;
-      throw err;
+    let data;
+    try {
+      data = await geminiCall(key, model, body);
+    } catch (err) {
+      lastErr = err;
+      if (err.status >= 500) {
+        // Surcharge passagère : un nouvel essai après une courte pause, puis modèle suivant.
+        await sleep(1500);
+        try { data = await geminiCall(key, model, body); } catch (err2) { lastErr = err2; }
+      }
+      if (!data) {
+        if (err.status === 404 || err.status === 429 || lastErr.status >= 500) continue;
+        throw lastErr;
+      }
     }
     const cand = data.candidates?.[0];
     const out = (cand?.content?.parts || []).filter((p) => p.text && !p.thought).map((p) => p.text).join("").trim();
@@ -79,7 +100,7 @@ async function geminiComplete(key, { system, text, image, json, web }) {
     }
     return out;
   }
-  throw new Error(lastErr?.message || "Modèle Gemini indisponible.");
+  throw lastErr || new Error("Modèle Gemini indisponible.");
 }
 
 // ---------- Commun ----------
@@ -105,7 +126,7 @@ function friendlyError(err, name) {
       ? "Quota gratuit Gemini atteint, réessayez dans une minute (ou demain si la limite du jour est atteinte)."
       : "Trop de requêtes, réessayez dans un instant.";
   }
-  if (status >= 500) return "Service IA momentanément indisponible.";
+  if (status >= 500) return `Service ${name} surchargé ou indisponible, réessayez dans quelques minutes. (Détail : ${msg})`;
   if (err instanceof TypeError) return "Connexion impossible (êtes-vous hors ligne ?).";
   return msg;
 }
