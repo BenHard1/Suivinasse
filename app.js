@@ -101,6 +101,24 @@ function wineTitle(w) {
   return [w.cuvee, w.domaine].filter(Boolean).join(" — ") || w.appellation || "Sans nom";
 }
 
+// Verre de vin qui se remplit, affiché pendant les appels à l'IA.
+function wineLoader(text) {
+  const bowl = "M15 6h34c1 12 1 24-4 32-3 5-8 8-13 8s-10-3-13-8C14 30 14 18 15 6Z";
+  return `<div class="wine-loader" role="status">
+    <svg viewBox="0 0 64 96" aria-hidden="true">
+      <defs><clipPath id="wl-bowl"><path d="${bowl}"/></clipPath></defs>
+      <g clip-path="url(#wl-bowl)">
+        <g class="wl-level">
+          <path class="wl-wave" d="M-64 4q8-4 16 0t16 0 16 0 16 0 16 0 16 0 16 0 16 0V80H-64Z"/>
+        </g>
+      </g>
+      <path class="wl-glass" d="${bowl}M32 46v34M20 82h24"/>
+      <path class="wl-shine" d="M21 12c-1 8-1 15 1 21"/>
+    </svg>
+    <p>${esc(text)}</p>
+  </div>`;
+}
+
 // ---------- Navigation ----------
 const TITLES = { cave: "Ma cave", add: "Ajouter", maturity: "À maturité", pairing: "Accords mets & vins", settings: "Réglages" };
 function show(view) {
@@ -398,7 +416,7 @@ async function onLabelPhoto(e) {
     pendingPhoto = await resizeImage(file, 160);
     $("#photo-preview").src = big;
     $("#photo-preview").hidden = false;
-    status.textContent = "Analyse de l'étiquette en cours…";
+    status.innerHTML = wineLoader("Analyse de l'étiquette en cours…");
     const result = await recognizeLabel(
       aiConfig(),
       { base64: big.split(",")[1], mediaType: "image/jpeg" },
@@ -470,7 +488,7 @@ $("#btn-pair").onclick = async () => {
   if (!cellar.length) return toast("Votre cave est vide.");
   const btn = $("#btn-pair");
   btn.disabled = true;
-  out.innerHTML = `<div class="spinner"></div><p class="muted small" style="text-align:center">Le sommelier étudie votre cave…</p>`;
+  out.innerHTML = wineLoader("Le sommelier étudie votre cave…");
   try {
     const md = await pairWines(aiConfig(), meal, cellar, $("#use-web").checked);
     out.innerHTML = `<div class="md">${markdown(md)}</div>`;

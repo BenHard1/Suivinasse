@@ -7,6 +7,7 @@
   --primary: #63001f;
   --primary-text: #f8f1e7;
   --brand: #63001f;
+  --wine: #7a0a2c;
   --accent: #b3582b;
   --danger: #b3261e;
   --ok: #2e7d32;
@@ -24,6 +25,7 @@
     --primary: #b3582b;
     --primary-text: #fffaf3;
     --accent: #d8794a;
+    --wine: #b0213f;
     --danger: #ef5350;
     --ok: #66bb6a;
     --warn: #ffa726;
@@ -174,11 +176,24 @@ legend { font-weight: 600; padding: 0 4px; }
 .result .md { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 14px; overflow-wrap: anywhere; }
 .result .md h1, .result .md h2, .result .md h3 { font-size: 1.05rem; margin: 14px 0 6px; }
 .result .md ul, .result .md ol { padding-left: 20px; }
-.spinner {
-  width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--primary);
-  border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto;
+.wine-loader { display: flex; flex-direction: column; align-items: center; padding: 18px 0 8px; color: var(--muted); font-size: .9rem; }
+.wine-loader svg { width: 64px; height: 96px; overflow: visible; }
+.wine-loader p { margin: 8px 0 0; text-align: center; }
+.wl-glass { fill: none; stroke: var(--text); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; opacity: .75; }
+.wl-shine { fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; opacity: .5; }
+.wl-wave { fill: var(--wine); animation: wl-slosh 1.2s linear infinite; }
+.wl-level { animation: wl-fill 3.2s ease-in-out infinite; }
+/* Le vin monte (y 48 → 18), reste plein un instant, puis le verre se vide. */
+@keyframes wl-fill {
+  0% { transform: translateY(48px); }
+  55%, 80% { transform: translateY(18px); }
+  100% { transform: translateY(48px); }
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes wl-slosh { from { transform: translateX(0); } to { transform: translateX(32px); } }
+@media (prefers-reduced-motion: reduce) {
+  .wl-level { animation: none; transform: translateY(26px); }
+  .wl-wave { animation: none; }
+}
 
 .cat-list { list-style: none; padding: 0; margin: 0; }
 .cat-list li {
