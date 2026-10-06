@@ -511,9 +511,29 @@ function markdown(src) {
       .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
   let html = "";
   let list = null;
-  const close = () => { if (list) { html += `</${list}>`; list = null; } };
+  let table = null; // { head: [], rows: [] }
+  const cells = (line) => line.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+  // Tableaux affichés en fiches empilées (« Colonne : valeur »), lisibles sur téléphone.
+  const flushTable = () => {
+    if (!table) return;
+    html += table.rows.map((r) => `<div class="md-row">${r.map((c, i) =>
+      c ? `<div>${table.head[i] ? `<span class="md-key">${inline(table.head[i])}</span> ` : ""}${inline(c)}</div>` : "").join("")}</div>`).join("");
+    table = null;
+  };
+  const close = () => {
+    if (list) { html += `</${list}>`; list = null; }
+    flushTable();
+  };
   for (const line of src.split("\n")) {
     let m;
+    if (/^\s*\|.*\|\s*$/.test(line)) {
+      if (list) { html += `</${list}>`; list = null; }
+      if (/^\s*\|?[\s:|-]+\|?\s*$/.test(line) && line.includes("-")) continue; // ligne de séparation
+      if (!table) table = { head: cells(line), rows: [] };
+      else table.rows.push(cells(line));
+      continue;
+    }
+    if (table) flushTable();
     if ((m = line.match(/^(#{1,4})\s+(.*)/))) { close(); html += `<h3>${inline(m[2])}</h3>`; }
     else if ((m = line.match(/^\s*[-*•]\s+(.*)/))) { if (list !== "ul") { close(); html += "<ul>"; list = "ul"; } html += `<li>${inline(m[1])}</li>`; }
     else if ((m = line.match(/^\s*\d+[.)]\s+(.*)/))) { if (list !== "ol") { close(); html += "<ol>"; list = "ol"; } html += `<li>${inline(m[1])}</li>`; }

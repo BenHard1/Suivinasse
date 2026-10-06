@@ -218,7 +218,7 @@ export async function pairWines(ai, meal, cellar, useWeb) {
   const inventory = cellar
     .map(
       (w) =>
-        `- [${w.id}] ${describe(w).replace(/\n/g, " | ")} | Quantité : ${w.quantity}` +
+        `- ${describe(w).replace(/\n/g, " | ")} | Quantité : ${w.quantity}` +
         ` | Maturité (${year}) : ${w.maturityLabel}` +
         ` | Rangement : ${w.auFrais ? "au frais (prête à servir)" : "en carton"}` +
         (w.boireDe || w.boireJusqua ? ` (à boire ${w.boireDe ?? "?"}–${w.boireJusqua ?? "?"})` : "") +
@@ -226,12 +226,11 @@ export async function pairWines(ai, meal, cellar, useWeb) {
     )
     .join("\n");
 
-  return complete(ai, {
+  const req = {
     effort: "medium",
-    web: useWeb,
     system:
       "Tu es un sommelier expert. Tu recommandes uniquement des bouteilles présentes dans la cave de l'utilisateur. " +
-      "Réponds en français, en Markdown concis et lisible sur téléphone.",
+      "Réponds en français, en Markdown concis et lisible sur téléphone : titres courts, listes à puces, pas de tableau.",
     text:
       `Repas prévu : ${meal}\n\nMa cave (année ${year}) :\n${inventory}\n\n` +
       `Analyse chaque fiche et ses commentaires, puis recommande les meilleurs accords pour ce repas (plat par plat si utile). ` +
@@ -239,5 +238,16 @@ export async function pairWines(ai, meal, cellar, useWeb) {
       `tant que l'accord reste bon. Évite les vins trop jeunes sauf s'il n'y a pas d'alternative (et dis-le).\n` +
       `Pour chaque recommandation : rang, nom de la bouteille, pourquoi l'accord fonctionne, état de maturité, ` +
       `température de service et éventuel carafage. Termine par un plan B si la cave manque d'un accord idéal.`,
-  });
+  };
+
+  if (!useWeb) return complete(ai, req);
+  try {
+    return await complete(ai, { ...req, web: true });
+  } catch (err) {
+    // La recherche internet peut être refusée (quota de recherche gratuit épuisé, clé ou modèle
+    // sans accès) : on refait la demande sans elle plutôt que d'échouer.
+    if (/invalide|hors ligne/i.test(err.message)) throw err;
+    const text = await complete(ai, { ...req, web: false });
+    return `${text}\n\n---\n*Recherche internet indisponible pour cette demande (${err.message}) : recommandations établies sans elle.*`;
+  }
 }

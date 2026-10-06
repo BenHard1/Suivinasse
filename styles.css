@@ -311,3 +311,7 @@ legend { font-weight: 600; padding: 0 4px; }
 .credit a { color: inherit; }
 #region-chips .chip { display: inline-flex; align-items: center; }
 .map-toggle { margin: 4px 0 8px; }
+.md-row { border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; margin: 8px 0; background: var(--bg); }
+.md-row > div + div { margin-top: 3px; }
+.md-key { font-weight: 700; color: var(--primary); }
+.md-key::after { content: " :"; }
