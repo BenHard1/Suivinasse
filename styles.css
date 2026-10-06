@@ -45,19 +45,14 @@ body {
 }
 /* Zone de contenu défilante, entre l'en-tête et la barre du bas qui restent fixes. */
 /* Mise en page : la page ne défile jamais ; en-tête, zone de contenu, barre du bas, bouton + et
-   notifications sont positionnés dans le corps de page (position absolue, pas « fixed »).
-   iPhone, appli installée (classe ios-standalone, barre d'état transparente) : iOS annonce une hauteur
-   d'affichage amputée de la barre d'état et limite les éléments « fixed » à cette zone trop courte.
-   Le corps de page reçoit donc la hauteur réelle de l'écran (100 % + barre d'état) : la barre du bas
-   se place au vrai bas de l'écran. */
+   notifications sont positionnés dans le corps de page, qui occupe tout l'écran. */
 :root { --bar-pad: env(safe-area-inset-bottom); --bar-h: 58px; }
 @media (max-width: 600px) { :root { --bar-h: 68px; } } /* barre du bas plus épaisse sur téléphone */
-/* Appli installée : 36 px de plus sous les libellés, pour qu'ils ne touchent jamais le bas de l'écran. */
-html.ios-standalone { --bar-pad: calc(env(safe-area-inset-bottom) + 36px); }
-@media (display-mode: standalone) { :root { --bar-pad: calc(env(safe-area-inset-bottom) + 36px); } }
+/* Appli installée : petite marge au-dessus de la barre d'accueil de l'iPhone. */
+html.ios-standalone { --bar-pad: calc(env(safe-area-inset-bottom) + 6px); }
+@media (display-mode: standalone) { :root { --bar-pad: calc(env(safe-area-inset-bottom) + 6px); } }
 html { background: var(--brand); }
 body { position: relative; }
-html.ios-standalone, html.ios-standalone body { height: calc(100% + env(safe-area-inset-top)); }
 .scroller {
   position: absolute; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;
   padding-top: calc(var(--head-h) + env(safe-area-inset-top));
@@ -81,6 +76,20 @@ html.ios-standalone, html.ios-standalone body { height: calc(100% + env(safe-are
     --full-h: 50px; --head-h: 82px; --head-compact: 54px; --text-h: 30px; --text-top: 12px;
     --full-tx: calc(43.4px - 50vw); --full-ty: -4.3px; --full-s: .631;
     --icon-tx: calc(50vw - 31.3px); --icon-ty: 4.4px; --icon-s: 1.584;
+  }
+}
+/* Appli installée : la zone de l'heure (barre d'état) prend la couleur de l'en-tête et s'ajoute à sa
+   hauteur ; l'en-tête lui-même est donc plus bas (valeurs d'animation recalculées). */
+html.ios-standalone {
+  --full-h: 44px; --head-h: 64px; --head-compact: 44px; --text-h: 28px; --text-top: 8px;
+  --full-tx: calc(39.0px - 50vw); --full-ty: -2.3px; --full-s: .670;
+  --icon-tx: calc(50vw - 29.5px); --icon-ty: 2.4px; --icon-s: 1.493;
+}
+@media (display-mode: standalone) {
+  :root {
+    --full-h: 44px; --head-h: 64px; --head-compact: 44px; --text-h: 28px; --text-top: 8px;
+    --full-tx: calc(39.0px - 50vw); --full-ty: -2.3px; --full-s: .670;
+    --icon-tx: calc(50vw - 29.5px); --icon-ty: 2.4px; --icon-s: 1.493;
   }
 }
 .topbar {
