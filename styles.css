@@ -52,9 +52,9 @@ body {
    se place au vrai bas de l'écran. */
 :root { --bar-pad: env(safe-area-inset-bottom); --bar-h: 58px; }
 @media (max-width: 600px) { :root { --bar-h: 68px; } } /* barre du bas plus épaisse sur téléphone */
-/* Appli installée : 24 px de plus sous les libellés, pour qu'ils ne touchent jamais le bas de l'écran. */
-html.ios-standalone { --bar-pad: calc(env(safe-area-inset-bottom) + 24px); }
-@media (display-mode: standalone) { :root { --bar-pad: calc(env(safe-area-inset-bottom) + 24px); } }
+/* Appli installée : 36 px de plus sous les libellés, pour qu'ils ne touchent jamais le bas de l'écran. */
+html.ios-standalone { --bar-pad: calc(env(safe-area-inset-bottom) + 36px); }
+@media (display-mode: standalone) { :root { --bar-pad: calc(env(safe-area-inset-bottom) + 36px); } }
 html { background: var(--brand); }
 body { position: relative; }
 html.ios-standalone, html.ios-standalone body { height: calc(100% + env(safe-area-inset-top)); }
@@ -73,6 +73,15 @@ html.ios-standalone, html.ios-standalone body { height: calc(100% + env(safe-are
   --head-compact: 62px;
   --full-tx: calc(50.3px - 50vw); --full-ty: -8.3px; --full-s: .596;
   --icon-tx: calc(50vw - 34.4px); --icon-ty: 8.5px; --icon-s: 1.677;
+  --text-h: 34px; --text-top: 14px;
+}
+/* Téléphone : en-tête plus compact (valeurs d'animation recalculées pour ces tailles). */
+@media (max-width: 600px) {
+  :root {
+    --full-h: 50px; --head-h: 82px; --head-compact: 54px; --text-h: 30px; --text-top: 12px;
+    --full-tx: calc(43.4px - 50vw); --full-ty: -4.3px; --full-s: .631;
+    --icon-tx: calc(50vw - 31.3px); --icon-ty: 4.4px; --icon-s: 1.584;
+  }
 }
 .topbar {
   position: absolute; top: 0; left: 0; right: 0; z-index: 5;
@@ -85,7 +94,7 @@ html.ios-standalone, html.ios-standalone body { height: calc(100% + env(safe-are
 .brand-full, .brand-icon { position: absolute; display: block; width: auto; transform-origin: 0 0; transition: transform .35s ease, opacity .3s ease; }
 .brand-full { height: var(--full-h); top: calc(env(safe-area-inset-top) + (var(--head-h) - var(--full-h)) / 2); left: calc(50% - var(--full-h) * .96515); }
 .brand-icon {
-  height: 34px; top: calc(env(safe-area-inset-top) + 14px); left: 16px; opacity: 0;
+  height: var(--text-h); top: calc(env(safe-area-inset-top) + var(--text-top)); left: 16px; opacity: 0;
   transform: translate(var(--icon-tx), var(--icon-ty)) scale(var(--icon-s));
 }
 .topbar.compact { height: calc(var(--head-compact) + env(safe-area-inset-top)); box-shadow: 0 2px 10px rgba(0, 0, 0, .25); }
@@ -266,6 +275,8 @@ legend { font-weight: 600; padding: 0 4px; }
   position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
   display: flex; align-items: stretch; height: calc(var(--bar-h) + var(--bar-pad));
   padding-bottom: var(--bar-pad);
+  /* marges latérales : les coins arrondis de l'écran ne rognent plus les libellés des bords */
+  padding-left: max(10px, env(safe-area-inset-left)); padding-right: max(10px, env(safe-area-inset-right));
   background: var(--brand);
 }
 .tabbar button {
