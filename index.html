@@ -150,9 +150,17 @@
         <p class="muted small">Mode sans compte : la cave est enregistrée uniquement sur ce téléphone.</p>
       </div>
 
-      <h2>Clé API Claude</h2>
-      <p class="muted small">Nécessaire pour la reconnaissance photo et les accords mets‑vins. Elle reste stockée uniquement sur ce téléphone. Créez-la sur <a href="https://console.anthropic.com/" target="_blank" rel="noopener">console.anthropic.com</a>.</p>
-      <input id="api-key" type="password" placeholder="sk-ant-…" autocomplete="off">
+      <h2>Intelligence artificielle</h2>
+      <p class="muted small">Pour la reconnaissance photo et les accords mets‑vins. La clé reste stockée uniquement sur ce téléphone.</p>
+      <label>Moteur IA
+        <select id="ai-provider">
+          <option value="gemini">Google Gemini — gratuit</option>
+          <option value="claude">Claude — payant à l'usage</option>
+        </select>
+      </label>
+      <p id="key-help-gemini" class="muted small">Clé gratuite, sans carte bancaire : sur <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>, connectez-vous avec un compte Google puis « Create API key ».</p>
+      <p id="key-help-claude" class="muted small" hidden>Créez une clé et ajoutez du crédit sur <a href="https://console.anthropic.com/" target="_blank" rel="noopener">console.anthropic.com</a>.</p>
+      <input id="api-key" type="password" autocomplete="off">
       <button id="btn-save-key" class="btn btn-secondary btn-block">Enregistrer la clé</button>
 
       <h2>Catégories</h2>

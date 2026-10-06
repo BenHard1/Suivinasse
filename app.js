@@ -1,8 +1,9 @@
-import { recognizeLabel, estimateWindow, pairWines } from "./ai.js";
+import { recognizeLabel, estimateWindow, pairWines, PROVIDERS } from "./ai.js";
 import * as store from "./storage.js";
 
 // ---------- Stockage ----------
-const API_KEY = "macave.apikey";
+const PROVIDER_KEY = "macave.provider";
+const KEY_STORE = { claude: "macave.apikey", gemini: "macave.key.gemini" };
 
 const DEFAULT_CATEGORIES = [
   { name: "Rouge", kind: "vin", color: "#8e1b2f" },
@@ -28,7 +29,10 @@ const DEFAULT_WINDOWS = {
 const defaultState = () => ({ wines: [], categories: structuredClone(DEFAULT_CATEGORIES) });
 let state = defaultState();
 const save = () => store.save(state);
-const apiKey = () => localStorage.getItem(API_KEY) || "";
+const keyFor = (p) => localStorage.getItem(KEY_STORE[p]) || "";
+// Gemini par défaut, sauf si une clé Claude est déjà enregistrée sur ce téléphone.
+const provider = () => localStorage.getItem(PROVIDER_KEY) || (keyFor("claude") ? "claude" : "gemini");
+const aiConfig = () => ({ provider: provider(), key: keyFor(provider()) });
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const catOf = (name) => state.categories.find((c) => c.name === name);
@@ -336,7 +340,7 @@ $("#photo-input").onchange = async (e) => {
     $("#photo-preview").hidden = false;
     status.textContent = "Analyse de l'étiquette en cours…";
     const result = await recognizeLabel(
-      apiKey(),
+      aiConfig(),
       { base64: big.split(",")[1], mediaType: "image/jpeg" },
       state.categories.map((c) => c.name),
     );
@@ -357,7 +361,7 @@ $("#btn-estimate").onclick = async (e) => {
   btn.disabled = true;
   btn.textContent = "Estimation…";
   try {
-    const r = await estimateWindow(apiKey(), data);
+    const r = await estimateWindow(aiConfig(), data);
     if (r.boireDe) form.boireDe.value = r.boireDe;
     if (r.boireJusqua) form.boireJusqua.value = r.boireJusqua;
     toast(r.boireDe || r.boireJusqua ? "Fenêtre estimée" : "Pas d'estimation possible");
@@ -399,7 +403,7 @@ $("#btn-pair").onclick = async () => {
   btn.disabled = true;
   out.innerHTML = `<div class="spinner"></div><p class="muted small" style="text-align:center">Le sommelier étudie votre cave…</p>`;
   try {
-    const md = await pairWines(apiKey(), meal, cellar, $("#use-web").checked);
+    const md = await pairWines(aiConfig(), meal, cellar, $("#use-web").checked);
     out.innerHTML = `<div class="md">${markdown(md)}</div>`;
   } catch (err) {
     out.innerHTML = `<p class="b-past badge">⚠️ ${esc(err.message)}</p>`;
@@ -437,7 +441,8 @@ function renderSettings() {
   $("#account-box").hidden = !user;
   $("#local-box").hidden = Boolean(user);
   if (user) $("#account-email").textContent = `Connecté : ${user.email}`;
-  $("#api-key").value = apiKey();
+  $("#ai-provider").value = provider();
+  showProviderKey(provider());
   $("#cat-list").innerHTML = state.categories
     .map((c, i) => {
       const n = state.wines.filter((w) => w.category === c.name).length;
@@ -452,9 +457,23 @@ function renderSettings() {
   }));
 }
 
+function showProviderKey(p) {
+  $("#api-key").value = keyFor(p);
+  $("#api-key").placeholder = `Clé API ${PROVIDERS[p].label} (${PROVIDERS[p].keyHint})`;
+  $("#key-help-gemini").hidden = p !== "gemini";
+  $("#key-help-claude").hidden = p !== "claude";
+}
+
+$("#ai-provider").onchange = (e) => {
+  localStorage.setItem(PROVIDER_KEY, e.target.value);
+  showProviderKey(e.target.value);
+};
+
 $("#btn-save-key").onclick = () => {
-  localStorage.setItem(API_KEY, $("#api-key").value.trim());
-  toast("Clé enregistrée");
+  const p = $("#ai-provider").value;
+  localStorage.setItem(PROVIDER_KEY, p);
+  localStorage.setItem(KEY_STORE[p], $("#api-key").value.trim());
+  toast(`Clé ${PROVIDERS[p].label} enregistrée`);
 };
 
 $("#btn-add-cat").onclick = () => {
