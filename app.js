@@ -120,20 +120,8 @@ function wineLoader(text) {
   </div>`;
 }
 
-// iPhone, appli installée (barre d'état transparente) : iOS laisse en bas de l'écran une bande hors de
-// la zone d'affichage, où rien ne peut être dessiné (le fond bordeaux du document y apparaît).
-// On mesure sa hauteur (variable CSS --ios-gap) pour retirer d'autant la marge de la barre d'accueil.
-function fixIosStandaloneGap() {
-  if (navigator.standalone !== true) return; // propriété propre à iOS, vraie uniquement hors navigateur
-  const portrait = window.innerHeight > window.innerWidth;
-  const full = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
-  const gap = full - window.innerHeight;
-  // Un grand écart signifie que le clavier est ouvert : on ne touche à rien.
-  document.documentElement.style.setProperty("--ios-gap", gap > 0 && gap < 80 ? `${gap}px` : "0px");
-}
-fixIosStandaloneGap();
-window.addEventListener("resize", fixIosStandaloneGap);
-window.addEventListener("orientationchange", () => setTimeout(fixIosStandaloneGap, 300));
+// iPhone, appli installée : la page prend la hauteur réelle de l'écran (voir styles.css, ios-standalone).
+if (navigator.standalone === true) document.documentElement.classList.add("ios-standalone");
 
 // En-tête réduit (icône seule) dès que l'on fait défiler la page.
 const topbar = document.querySelector(".topbar");
@@ -154,6 +142,7 @@ function show(view) {
   const tab = view === "add" ? "cave" : view;
   document.querySelectorAll(".tabbar button").forEach((b) => b.classList.toggle("active", b.dataset.view === tab));
   $("#total-count").hidden = tab !== "cave";
+  $("#fab-add").hidden = view !== "cave";
   $("#view-title").textContent = view === "add" && $("#wine-form").id.value ? "Modifier la fiche" : TITLES[view];
   if (view === "add" && !$("#wine-form").id.value) resetForm();
   render();

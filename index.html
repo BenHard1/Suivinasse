@@ -58,7 +58,6 @@
       <div id="store-filter" class="chips"></div>
       <label class="toggle"><input type="checkbox" id="show-empty"> Afficher les bouteilles épuisées</label>
       <div id="cave-list"></div>
-      <button id="fab-add" class="fab" aria-label="Ajouter des bouteilles"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
     </section>
 
     <!-- AJOUT / EDITION -->
@@ -231,6 +230,8 @@
     <button data-view="settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></svg><span>Réglages</span></button>
   </nav>
 
+  <!-- Hors de la zone défilante pour rester en place ; visible uniquement sur la page Cave. -->
+  <button id="fab-add" class="fab" aria-label="Ajouter des bouteilles"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
   <div id="toast" class="toast" hidden></div>
 
   <script type="module" src="app.js"></script>
