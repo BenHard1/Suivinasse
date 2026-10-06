@@ -120,19 +120,22 @@ function wineLoader(text) {
 }
 
 // ---------- Navigation ----------
-const TITLES = { cave: "Ma cave", add: "Ajouter", maturity: "À maturité", pairing: "Accords mets & vins", settings: "Réglages" };
+const TITLES = { cave: "Ma cave", add: "Ajouter", maturity: "À maturité", pairing: "Accords mets & vins", terroir: "Cépages & terroirs", settings: "Réglages" };
 function show(view) {
   document.querySelectorAll(".view").forEach((v) => v.classList.toggle("active", v.id === `view-${view}`));
-  document.querySelectorAll(".tabbar button").forEach((b) => b.classList.toggle("active", b.dataset.view === view));
+  // La fiche d'ajout / modification dépend de la cave : l'onglet Cave reste mis en avant.
+  const tab = view === "add" ? "cave" : view;
+  document.querySelectorAll(".tabbar button").forEach((b) => b.classList.toggle("active", b.dataset.view === tab));
   $("#view-title").textContent = view === "add" && $("#wine-form").id.value ? "Modifier la fiche" : TITLES[view];
   if (view === "add" && !$("#wine-form").id.value) resetForm();
   render();
   window.scrollTo(0, 0);
 }
-document.querySelectorAll(".tabbar button").forEach((b) => (b.onclick = () => {
-  if (b.dataset.view === "add") $("#wine-form").id.value = "";
-  show(b.dataset.view);
-}));
+document.querySelectorAll(".tabbar button").forEach((b) => (b.onclick = () => show(b.dataset.view)));
+$("#fab-add").onclick = () => {
+  $("#wine-form").id.value = "";
+  show("add");
+};
 
 // ---------- Cave ----------
 let activeCat = "Toutes";
@@ -182,7 +185,7 @@ function renderCave() {
   if (!list.length) {
     el.innerHTML = state.wines.length
       ? `<p class="empty-state">Aucune bouteille ne correspond.</p>`
-      : `<p class="empty-state">Votre cave est vide.<br>Touchez <b>Ajouter</b> pour rentrer vos premières bouteilles.</p>`;
+      : `<p class="empty-state">Votre cave est vide.<br>Touchez le bouton <b>+</b> pour rentrer vos premières bouteilles.</p>`;
     return;
   }
 
@@ -522,6 +525,107 @@ function markdown(src) {
   return html;
 }
 
+// ---------- Cépages & terroirs ----------
+let terroirData = null;
+let activeRegion = null;
+
+async function renderTerroir() {
+  if (!terroirData) {
+    const [{ VIEWBOX, DEPARTEMENTS }, { REGIONS_VITICOLES, deptToRegion }] =
+      await Promise.all([import("./france-map.js"), import("./terroir.js")]);
+    terroirData = { REGIONS_VITICOLES, deptToRegion };
+    buildMap(VIEWBOX, DEPARTEMENTS);
+  }
+  const { REGIONS_VITICOLES } = terroirData;
+  $("#region-chips").innerHTML = REGIONS_VITICOLES.map((r) =>
+    `<button class="chip ${r.id === activeRegion ? "active" : ""}" data-region="${r.id}"><span class="dot" style="background:${r.color}"></span>${esc(r.name)}</button>`).join("");
+  $("#region-chips").querySelectorAll(".chip").forEach((c) => (c.onclick = () => selectRegion(c.dataset.region, true)));
+  $("#france-map").classList.toggle("has-selection", Boolean(activeRegion));
+  $("#france-map").querySelectorAll("[data-region]").forEach((el) => el.classList.toggle("sel", el.dataset.region === activeRegion));
+  renderRegionDetail();
+}
+
+function buildMap(viewBox, deps) {
+  const svg = $("#france-map");
+  const NS = "http://www.w3.org/2000/svg";
+  svg.setAttribute("viewBox", viewBox);
+  const g = document.createElementNS(NS, "g");
+  for (const d of deps) {
+    const region = terroirData.deptToRegion.get(d.id);
+    const p = document.createElementNS(NS, "path");
+    p.setAttribute("d", d.d);
+    p.setAttribute("class", region ? "dep wine" : "dep");
+    if (region) {
+      p.dataset.region = region.id;
+      p.style.fill = region.color;
+    }
+    const t = document.createElementNS(NS, "title");
+    t.textContent = region ? `${region.name} — ${d.name}` : d.name;
+    p.appendChild(t);
+    g.appendChild(p);
+  }
+  svg.appendChild(g);
+  // Étiquette au centre de chaque région (décalée là où deux régions voisines se chevauchent).
+  const LABEL_OFFSET = { beaujolais: [-16, -2], savoie: [12, 10], jura: [4, 0] };
+  for (const r of terroirData.REGIONS_VITICOLES) {
+    const boxes = [...svg.querySelectorAll(`path[data-region="${r.id}"]`)].map((p) => p.getBBox());
+    if (!boxes.length) continue;
+    const x1 = Math.min(...boxes.map((b) => b.x)), x2 = Math.max(...boxes.map((b) => b.x + b.width));
+    const y1 = Math.min(...boxes.map((b) => b.y)), y2 = Math.max(...boxes.map((b) => b.y + b.height));
+    const t = document.createElementNS(NS, "text");
+    const [dx, dy] = LABEL_OFFSET[r.id] || [0, 0];
+    t.setAttribute("x", (x1 + x2) / 2 + dx);
+    t.setAttribute("y", (y1 + y2) / 2 + dy);
+    t.setAttribute("class", "map-label");
+    t.dataset.region = r.id;
+    t.textContent = r.name.replace(" (Cognac)", "").replace("Vallée du ", "").replace("Val de ", "");
+    svg.appendChild(t);
+  }
+  svg.addEventListener("click", (e) => {
+    const el = e.target.closest("[data-region]");
+    selectRegion(el ? el.dataset.region : null);
+  });
+}
+
+function selectRegion(id, scroll = false) {
+  activeRegion = id === activeRegion ? null : id;
+  renderTerroir();
+  if (activeRegion && scroll) $("#region-detail").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function winesOfRegion(r) {
+  return state.wines.filter((w) => {
+    if (!w.quantity) return false;
+    if (r.id === "champagne" && w.category === "Champagne") return true;
+    const text = `${w.region || ""} ${w.appellation || ""}`.toLowerCase();
+    return r.aliases.some((a) => text.includes(a));
+  });
+}
+
+function renderRegionDetail() {
+  const el = $("#region-detail");
+  const r = terroirData.REGIONS_VITICOLES.find((x) => x.id === activeRegion);
+  if (!r) {
+    el.innerHTML = "";
+    return;
+  }
+  const chips = (list, cls) => list.map((c) => `<span class="grape ${cls}">${esc(c)}</span>`).join("");
+  const mine = winesOfRegion(r);
+  el.innerHTML = `<div class="region-card">
+    <h2><span class="dot" style="background:${r.color}"></span>${esc(r.name)}</h2>
+    <h3>Cépages rouges</h3><div class="grapes">${chips(r.rouges, "red")}</div>
+    <h3>Cépages blancs</h3><div class="grapes">${chips(r.blancs, "white")}</div>
+    <h3>Terroir</h3><p>${esc(r.terroir)}</p>
+    <h3>Appellations phares</h3><p>${r.appellations.map(esc).join(" · ")}</p>
+    <h3>Styles</h3><p>${esc(r.styles)}</p>
+    <h3>Dans ma cave</h3>
+    ${mine.length
+      ? `<p class="muted small">${bottles(mine)} bouteille${bottles(mine) > 1 ? "s" : ""}</p><div class="region-wines">${mine.map(cardHtml).join("")}</div>`
+      : `<p class="muted small">Aucune bouteille de cette région pour le moment.</p>`}
+  </div>`;
+  bindCards(el);
+}
+
 // ---------- Réglages ----------
 function renderSettings() {
   const user = store.currentUser();
@@ -616,6 +720,7 @@ function render() {
   renderCave();
   if ($("#view-maturity").classList.contains("active")) renderMaturity();
   if ($("#view-settings").classList.contains("active")) renderSettings();
+  if ($("#view-terroir").classList.contains("active")) renderTerroir();
 }
 
 // ---------- Comptes ----------

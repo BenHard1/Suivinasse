@@ -271,3 +271,39 @@ legend { font-weight: 600; padding: 0 4px; }
 .switch input:checked + .switch-track { background: var(--primary); }
 .switch input:checked + .switch-track::after { transform: translateX(18px); }
 .switch input:focus-visible + .switch-track { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.fab {
+  position: fixed; z-index: 9; right: 16px; bottom: calc(88px + env(safe-area-inset-bottom));
+  width: 56px; height: 56px; border-radius: 50%; border: none; display: grid; place-items: center;
+  background: var(--primary); color: var(--primary-text); box-shadow: 0 6px 16px rgba(99, 0, 31, .35);
+}
+.fab .ico { width: 26px; height: 26px; stroke-width: 2.2; }
+.fab:active { transform: scale(.95); }
+
+.map-wrap { margin: 8px -4px 4px; }
+#france-map { width: 100%; height: auto; display: block; }
+#france-map .dep { fill: var(--border); stroke: var(--surface); stroke-width: .8; transition: opacity .2s; }
+#france-map .dep.wine { cursor: pointer; }
+#france-map.has-selection .dep.wine:not(.sel) { opacity: .3; }
+#france-map .dep.sel { stroke: var(--text); stroke-width: 1.2; }
+.map-label {
+  font: 600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-anchor: middle; dominant-baseline: middle;
+  fill: #fff; stroke: rgba(0, 0, 0, .55); stroke-width: 2.4px; paint-order: stroke; pointer-events: none;
+}
+#france-map.has-selection .map-label:not(.sel) { opacity: .35; }
+.region-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 2px 14px 12px; margin-top: 8px; }
+.region-card h2 { display: flex; align-items: center; gap: 4px; color: var(--primary); }
+.region-card h3 { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 14px 0 6px; }
+.region-card p { margin: 0; }
+.grapes { display: flex; flex-wrap: wrap; gap: 6px; }
+.grape { border-radius: 999px; padding: 3px 10px; font-size: .85rem; font-weight: 600; }
+.grape.red { background: rgba(142, 27, 47, .12); color: #8e1b2f; }
+.grape.white { background: rgba(201, 162, 39, .18); color: #8a6d12; }
+@media (prefers-color-scheme: dark) {
+  .grape.red { color: #f08a9e; }
+  .grape.white { color: #e8c96a; }
+}
+.region-wines { margin-top: 6px; }
+.credit { margin-top: 18px; }
+.credit a { color: inherit; }
+#region-chips .chip { display: inline-flex; align-items: center; }
