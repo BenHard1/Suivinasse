@@ -160,7 +160,9 @@ function chipsHtml(items, active, attr) {
 function renderCave() {
   const showEmpty = $("#show-empty").checked;
   const total = bottles(state.wines);
-  $("#total-count").textContent = `${total} bouteille${total > 1 ? "s" : ""}`;
+  const countEl = $("#total-count");
+  countEl.innerHTML = `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2h4v4.5c0 .8.4 1.5 1 2 1.3 1 2 2.4 2 4V20a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-7.5c0-1.6.7-3 2-4 .6-.5 1-1.2 1-2Z"/></svg>${total}`;
+  countEl.title = countEl.ariaLabel = `${total} bouteille${total > 1 ? "s" : ""} en cave`;
 
   const byCat = (c) => bottles(state.wines.filter((w) => w.category === c));
   $("#cat-filter").innerHTML = chipsHtml(
