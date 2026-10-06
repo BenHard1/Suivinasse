@@ -120,7 +120,7 @@ function wineLoader(text) {
   </div>`;
 }
 
-// iPhone, appli installée : en-tête plus bas et marge de la barre d'accueil (voir styles.css, ios-standalone).
+// iPhone, appli installée : réglages propres à ce mode (voir styles.css, ios-standalone).
 if (navigator.standalone === true) document.documentElement.classList.add("ios-standalone");
 
 // En-tête réduit (icône seule) dès que l'on fait défiler la page.

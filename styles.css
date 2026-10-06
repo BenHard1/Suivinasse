@@ -45,14 +45,17 @@ body {
 }
 /* Zone de contenu défilante, entre l'en-tête et la barre du bas qui restent fixes. */
 /* Mise en page : la page ne défile jamais ; en-tête, zone de contenu, barre du bas, bouton + et
-   notifications sont positionnés dans le corps de page, qui occupe tout l'écran. */
+   notifications sont positionnés dans le corps de page (position absolue, pas « fixed »).
+   iPhone, appli installée (classe ios-standalone, barre d'état transparente) : le corps de page reçoit
+   la hauteur de l'écran augmentée de la barre d'état. */
 :root { --bar-pad: env(safe-area-inset-bottom); --bar-h: 58px; }
 @media (max-width: 600px) { :root { --bar-h: 68px; } } /* barre du bas plus épaisse sur téléphone */
-/* Appli installée : petite marge au-dessus de la barre d'accueil de l'iPhone. */
-html.ios-standalone { --bar-pad: calc(env(safe-area-inset-bottom) + 6px); }
-@media (display-mode: standalone) { :root { --bar-pad: calc(env(safe-area-inset-bottom) + 6px); } }
+/* Appli installée : 12 px de plus sous les libellés, pour qu'ils ne touchent jamais le bas de l'écran. */
+html.ios-standalone { --bar-pad: calc(env(safe-area-inset-bottom) + 12px); }
+@media (display-mode: standalone) { :root { --bar-pad: calc(env(safe-area-inset-bottom) + 12px); } }
 html { background: var(--brand); }
 body { position: relative; }
+html.ios-standalone, html.ios-standalone body { height: calc(100% + env(safe-area-inset-top)); }
 .scroller {
   position: absolute; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;
   padding-top: calc(var(--head-h) + env(safe-area-inset-top));
@@ -284,8 +287,6 @@ legend { font-weight: 600; padding: 0 4px; }
   position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
   display: flex; align-items: stretch; height: calc(var(--bar-h) + var(--bar-pad));
   padding-bottom: var(--bar-pad);
-  /* marges latérales : les coins arrondis de l'écran ne rognent plus les libellés des bords */
-  padding-left: max(10px, env(safe-area-inset-left)); padding-right: max(10px, env(safe-area-inset-right));
   background: var(--brand);
 }
 .tabbar button {
