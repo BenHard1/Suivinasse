@@ -120,9 +120,9 @@ function wineLoader(text) {
   </div>`;
 }
 
-// iPhone, appli installée (barre d'état transparente) : iOS annonce une zone d'affichage plus courte
-// que l'écran (de la hauteur de la barre d'état), et tout ce qui est « collé en bas » flotte au-dessus
-// du bas réel. On mesure cet écart et on le compense (variable CSS --ios-gap).
+// iPhone, appli installée (barre d'état transparente) : iOS laisse en bas de l'écran une bande hors de
+// la zone d'affichage, où rien ne peut être dessiné (le fond bordeaux du document y apparaît).
+// On mesure sa hauteur (variable CSS --ios-gap) pour retirer d'autant la marge de la barre d'accueil.
 function fixIosStandaloneGap() {
   if (navigator.standalone !== true) return; // propriété propre à iOS, vraie uniquement hors navigateur
   const portrait = window.innerHeight > window.innerWidth;
