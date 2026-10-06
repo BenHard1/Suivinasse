@@ -345,7 +345,7 @@ function resizeImage(file, max) {
   });
 }
 
-$("#photo-input").onchange = async (e) => {
+async function onLabelPhoto(e) {
   const file = e.target.files[0];
   e.target.value = "";
   if (!file) return;
@@ -369,7 +369,9 @@ $("#photo-input").onchange = async (e) => {
   } catch (err) {
     status.textContent = err.message;
   }
-};
+}
+$("#photo-input").onchange = onLabelPhoto;
+$("#gallery-input").onchange = onLabelPhoto;
 
 $("#btn-estimate").onclick = async (e) => {
   const btn = e.currentTarget;

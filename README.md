@@ -6,7 +6,7 @@ Web app (PWA) installable sur l'écran d'accueil du téléphone pour gérer sa c
 
 - **Cave** : bouteilles classées par catégorie (Rouge, Blanc, Rosé, Champagne, Porto, Whiskey, Rhum, Absinthe + catégories personnalisées), recherche, boutons **+ / −** pour ajouter ou retirer une bouteille bue (avec « Annuler »).
 - **Ajouter** : fiche avec cuvée, domaine, appellation, cépages, millésime, fenêtre de dégustation, commentaire, et **nombre de bouteilles rentrées** (1, 3, 6, 12 ou libre). Si la même cuvée/millésime existe déjà, les bouteilles sont ajoutées à la fiche existante.
-- **📷 Reconnaissance photo** : photographiez l'étiquette, l'IA (Gemini ou Claude) pré-remplit la fiche et estime la fenêtre de dégustation.
+- **Reconnaissance photo** : photographiez l'étiquette ou choisissez une photo de la galerie, l'IA (Gemini ou Claude) pré-remplit la fiche et estime la fenêtre de dégustation.
 - **Maturité** : liste des vins à maturité, triés par urgence (apogée dépassée → à boire rapidement → à maturité).
 - **Accords mets & vins** : décrivez le repas, l'IA analyse toutes les fiches et commentaires de votre cave (avec recherche internet si activée) et recommande les bouteilles par ordre de priorité, en privilégiant celles dont la maturité est atteinte.
 - **Réglages** : moteur IA et clé API, gestion des catégories, export/import JSON.

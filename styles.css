@@ -166,6 +166,9 @@ legend { font-weight: 600; padding: 0 4px; }
 .qty-picker input { margin-top: 0; }
 
 .photo-box { margin-bottom: 4px; }
+.photo-title { font-weight: 500; margin: 8px 0 6px; }
+.photo-actions { display: flex; gap: 8px; }
+.photo-actions .btn { flex: 1; min-width: 0; padding: 12px 8px; font-size: .95rem; }
 #photo-preview { max-width: 100%; max-height: 220px; border-radius: var(--radius); display: block; margin: 6px auto; }
 
 .result { margin-top: 14px; }

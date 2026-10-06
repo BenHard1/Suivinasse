@@ -59,8 +59,13 @@
     <!-- AJOUT / EDITION -->
     <section id="view-add" class="view">
       <div class="photo-box">
-        <label class="btn btn-secondary btn-block" for="photo-input"><svg class="ico ico-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3Z"/><circle cx="12" cy="13" r="3"/></svg>Remplir depuis une photo d'étiquette</label>
+        <p class="photo-title">Remplir depuis une photo d'étiquette</p>
+        <div class="photo-actions">
+          <label class="btn btn-secondary" for="photo-input"><svg class="ico ico-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3Z"/><circle cx="12" cy="13" r="3"/></svg>Photo</label>
+          <label class="btn btn-secondary" for="gallery-input"><svg class="ico ico-inline" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg>Galerie</label>
+        </div>
         <input id="photo-input" type="file" accept="image/*" capture="environment" hidden>
+        <input id="gallery-input" type="file" accept="image/*" hidden>
         <p id="photo-status" class="muted small"></p>
         <img id="photo-preview" alt="" hidden>
       </div>
