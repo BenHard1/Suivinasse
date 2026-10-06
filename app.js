@@ -529,6 +529,8 @@ function markdown(src) {
 let terroirData = null;
 let activeRegion = null;
 
+$("#map-mine").onchange = () => renderTerroir();
+
 async function renderTerroir() {
   if (!terroirData) {
     const [{ VIEWBOX, DEPARTEMENTS }, { REGIONS_VITICOLES, deptToRegion }] =
@@ -537,8 +539,21 @@ async function renderTerroir() {
     buildMap(VIEWBOX, DEPARTEMENTS);
   }
   const { REGIONS_VITICOLES } = terroirData;
-  $("#region-chips").innerHTML = REGIONS_VITICOLES.map((r) =>
-    `<button class="chip ${r.id === activeRegion ? "active" : ""}" data-region="${r.id}"><span class="dot" style="background:${r.color}"></span>${esc(r.name)}</button>`).join("");
+  // Option « Dans ma cave » : seules les régions dont j'ai des bouteilles restent en couleur.
+  const onlyMine = $("#map-mine").checked;
+  const count = Object.fromEntries(REGIONS_VITICOLES.map((r) => [r.id, bottles(winesOfRegion(r))]));
+  const svg = $("#france-map");
+  svg.classList.toggle("only-mine", onlyMine);
+  svg.querySelectorAll("[data-region]").forEach((el) => el.classList.toggle("mine", count[el.dataset.region] > 0));
+  svg.querySelectorAll(".map-label").forEach((t) => {
+    const n = count[t.dataset.region];
+    t.textContent = t.dataset.name + (onlyMine && n ? ` · ${n}` : "");
+  });
+  const shown = onlyMine ? REGIONS_VITICOLES.filter((r) => count[r.id]) : REGIONS_VITICOLES;
+  $("#region-chips").innerHTML = shown.length
+    ? shown.map((r) =>
+      `<button class="chip ${r.id === activeRegion ? "active" : ""}" data-region="${r.id}"><span class="dot" style="background:${r.color}"></span>${esc(r.name)}${onlyMine ? ` · ${count[r.id]}` : ""}</button>`).join("")
+    : `<p class="muted small">Aucune bouteille rattachée à une région : renseignez le champ Région de vos fiches.</p>`;
   $("#region-chips").querySelectorAll(".chip").forEach((c) => (c.onclick = () => selectRegion(c.dataset.region, true)));
   $("#france-map").classList.toggle("has-selection", Boolean(activeRegion));
   $("#france-map").querySelectorAll("[data-region]").forEach((el) => el.classList.toggle("sel", el.dataset.region === activeRegion));
@@ -578,7 +593,8 @@ function buildMap(viewBox, deps) {
     t.setAttribute("y", (y1 + y2) / 2 + dy);
     t.setAttribute("class", "map-label");
     t.dataset.region = r.id;
-    t.textContent = r.name.replace(" (Cognac)", "").replace("Vallée du ", "").replace("Val de ", "");
+    t.dataset.name = r.name.replace(" (Cognac)", "").replace("Vallée du ", "").replace("Val de ", "");
+    t.textContent = t.dataset.name;
     svg.appendChild(t);
   }
   svg.addEventListener("click", (e) => {

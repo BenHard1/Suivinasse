@@ -9,7 +9,7 @@ Web app (PWA) installable sur l'écran d'accueil du téléphone pour gérer sa c
 - **Reconnaissance photo** : photographiez l'étiquette ou choisissez une photo de la galerie, l'IA (Gemini ou Claude) pré-remplit la fiche et estime la fenêtre de dégustation.
 - **Maturité** : liste des vins à maturité, triés par urgence (apogée dépassée → à boire rapidement → à maturité).
 - **Accords mets & vins** : décrivez le repas, l'IA analyse toutes les fiches et commentaires de votre cave (avec recherche internet si activée) et recommande les bouteilles par ordre de priorité, en privilégiant celles dont la maturité est atteinte.
-- **Cépages & terroirs** : carte de France interactive des régions viticoles ; un appui sur une région affiche ses cépages rouges et blancs, son terroir, ses appellations phares, ses styles et les bouteilles de la cave qui en viennent.
+- **Cépages & terroirs** : carte de France interactive des régions viticoles ; un appui sur une région affiche ses cépages rouges et blancs, son terroir, ses appellations phares, ses styles et les bouteilles de la cave qui en viennent ; l'interrupteur « Dans ma cave » ne garde en couleur que les régions représentées dans la cave, avec leur nombre de bouteilles.
 - **Réglages** : moteur IA et clé API, gestion des catégories, export/import JSON.
 
 ## Où sont stockées les données ?

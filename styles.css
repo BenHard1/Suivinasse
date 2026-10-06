@@ -291,6 +291,9 @@ legend { font-weight: 600; padding: 0 4px; }
   fill: #fff; stroke: rgba(0, 0, 0, .55); stroke-width: 2.4px; paint-order: stroke; pointer-events: none;
 }
 #france-map.has-selection .map-label:not(.sel) { opacity: .35; }
+#france-map.only-mine .dep.wine:not(.mine) { fill: var(--border) !important; }
+#france-map.only-mine .map-label:not(.mine) { display: none; }
+#france-map.only-mine .dep.wine.mine { stroke: var(--text); stroke-width: 1; }
 .region-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 2px 14px 12px; margin-top: 8px; }
 .region-card h2 { display: flex; align-items: center; gap: 4px; color: var(--primary); }
 .region-card h3 { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 14px 0 6px; }
@@ -307,3 +310,4 @@ legend { font-weight: 600; padding: 0 4px; }
 .credit { margin-top: 18px; }
 .credit a { color: inherit; }
 #region-chips .chip { display: inline-flex; align-items: center; }
+.map-toggle { margin: 4px 0 8px; }

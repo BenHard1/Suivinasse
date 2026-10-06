@@ -157,9 +157,13 @@
     <section id="view-terroir" class="view">
       <p class="muted small">Touchez une région viticole pour découvrir ses cépages, son terroir et vos bouteilles qui en viennent.</p>
       <div class="map-wrap"><svg id="france-map" role="img" aria-label="Carte des régions viticoles de France"></svg></div>
+      <label class="switch map-toggle">
+        <input type="checkbox" id="map-mine">
+        <span class="switch-track" aria-hidden="true"></span>
+        <span>Dans ma cave<br><span class="muted small">Mettre en avant les régions de mes bouteilles</span></span>
+      </label>
       <div id="region-chips" class="chips"></div>
       <div id="region-detail"></div>
-      <p class="muted small credit">Fond de carte : <a href="https://github.com/VictorCazanave/svg-maps" target="_blank" rel="noopener">svg-maps</a> © Victor Cazanave, <a href="https://creativecommons.org/licenses/by/4.0/deed.fr" target="_blank" rel="noopener">CC BY 4.0</a> (simplifié, régions viticoles ajoutées).</p>
     </section>
 
     <section id="view-settings" class="view">
@@ -202,6 +206,9 @@
       <button id="btn-export" class="btn btn-secondary btn-block"><svg class="ico ico-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>Exporter (JSON)</button>
       <label class="btn btn-secondary btn-block" for="import-file"><svg class="ico ico-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg>Importer une sauvegarde</label>
       <input id="import-file" type="file" accept="application/json,.json" hidden>
+
+      <h2>Crédits</h2>
+      <p class="muted small credit">Fond de carte : <a href="https://github.com/VictorCazanave/svg-maps" target="_blank" rel="noopener">svg-maps</a> © Victor Cazanave, <a href="https://creativecommons.org/licenses/by/4.0/deed.fr" target="_blank" rel="noopener">CC BY 4.0</a> (simplifié, régions viticoles ajoutées).</p>
     </section>
   </main>
 
