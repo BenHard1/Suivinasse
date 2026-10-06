@@ -232,6 +232,7 @@ function resetForm() {
   pendingPhoto = null;
   $("#photo-preview").hidden = true;
   $("#photo-status").textContent = "";
+  $("#estimate-status").textContent = "";
   $("#qty-label").firstChild.textContent = "Nombre de bouteilles rentrées";
   $("#btn-cancel").hidden = true;
   $("#btn-delete").hidden = true;
@@ -377,15 +378,22 @@ $("#btn-estimate").onclick = async (e) => {
   const btn = e.currentTarget;
   const data = readForm();
   if (!data.cuvee && !data.domaine && !data.appellation) return toast("Renseignez d'abord la cuvée ou le domaine.");
+  const status = $("#estimate-status");
   btn.disabled = true;
   btn.querySelector("span").textContent = "Estimation…";
+  status.textContent = "";
+  status.className = "small";
   try {
     const r = await estimateWindow(aiConfig(), data);
     if (r.boireDe) form.boireDe.value = r.boireDe;
     if (r.boireJusqua) form.boireJusqua.value = r.boireJusqua;
-    toast(r.boireDe || r.boireJusqua ? "Fenêtre estimée" : "Pas d'estimation possible");
+    status.textContent = r.boireDe || r.boireJusqua
+      ? `Fenêtre estimée : ${r.boireDe ?? "?"} – ${r.boireJusqua ?? "?"}`
+      : "L'IA n'a pas pu estimer la fenêtre pour ce vin.";
+    status.classList.add("msg-ok");
   } catch (err) {
-    toast(err.message);
+    status.textContent = err.message;
+    status.classList.add("msg-err");
   } finally {
     btn.disabled = false;
     btn.querySelector("span").textContent = "Estimer avec l'IA";

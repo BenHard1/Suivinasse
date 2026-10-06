@@ -134,8 +134,18 @@ function friendlyError(err, name) {
 function extractJson(text) {
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
-  if (start < 0 || end < start) throw new Error("Réponse illisible de l'IA.");
-  return JSON.parse(text.slice(start, end + 1));
+  if (start >= 0 && end > start) {
+    try {
+      return JSON.parse(text.slice(start, end + 1));
+    } catch {}
+  }
+  throw new Error(`Réponse illisible de l'IA : « ${text.slice(0, 120)} »`);
+}
+
+// Année plausible depuis un nombre, une chaîne (« 2025 », « vers 2030 ») ou null.
+function toYear(v) {
+  const m = String(v ?? "").match(/\b(1[89]\d\d|2[01]\d\d)\b/);
+  return m ? Number(m[1]) : null;
 }
 
 const FICHE_FIELDS = `{
@@ -170,9 +180,22 @@ export async function estimateWindow(ai, wine) {
     effort: "low",
     text:
       `Estime la fenêtre de dégustation (apogée) de cette bouteille :\n${describe(wine)}\n` +
-      `Réponds uniquement en JSON : {"boireDe": année ou null, "boireJusqua": année ou null}`,
+      `Réponds uniquement avec un objet JSON de la forme {"boireDe": 2025, "boireJusqua": 2035} ` +
+      `(années sur 4 chiffres, null si impossible à estimer).`,
   });
-  return extractJson(text);
+  let r;
+  try {
+    r = extractJson(text);
+  } catch (err) {
+    // Réponse hors format : on récupère les deux premières années citées.
+    const years = text.match(/\b(1[89]\d\d|2[01]\d\d)\b/g);
+    if (!years) throw err;
+    r = { boireDe: years[0], boireJusqua: years[1] };
+  }
+  if (Array.isArray(r)) r = r[0] || {};
+  const from = r.boireDe ?? r.boire_de ?? r.from ?? r.debut;
+  const to = r.boireJusqua ?? r.boire_jusqua ?? r.to ?? r.fin;
+  return { boireDe: toYear(from), boireJusqua: toYear(to) };
 }
 
 function describe(w) {
