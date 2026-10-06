@@ -315,3 +315,10 @@ legend { font-weight: 600; padding: 0 4px; }
 .md-row > div + div { margin-top: 3px; }
 .md-key { font-weight: 700; color: var(--primary); }
 .md-key::after { content: " :"; }
+
+.res-block { margin-top: 14px; }
+.res-title { font-family: Georgia, "Times New Roman", serif; color: var(--primary); font-size: 1.05rem; margin: 6px 0 8px; }
+.reco { margin-bottom: 12px; }
+.reco-why { font-size: .9rem; padding: 0 4px 6px; }
+.reco-service { color: var(--muted); font-size: .85rem; }
+.reco-tip { background: var(--surface); border-left: 3px solid var(--accent); border-radius: 8px; padding: 8px 12px; font-size: .9rem; }

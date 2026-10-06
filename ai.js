@@ -11,7 +11,7 @@ const CLAUDE_SDK_URL = "./vendor/anthropic-sdk.js"; // SDK officiel @anthropic-a
 const CLAUDE_MODEL = "claude-opus-5-5";
 let sdkPromise = null;
 
-async function claudeComplete(key, { system, text, image, web, effort }) {
+async function claudeComplete(key, { system, text, image, web, effort, timeout = 120000 }) {
   sdkPromise ??= import(CLAUDE_SDK_URL);
   const { default: Anthropic } = await sdkPromise;
   const client = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });
@@ -34,7 +34,7 @@ async function claudeComplete(key, { system, text, image, web, effort }) {
       fallbacks: "default",
       ...params,
       messages,
-    });
+    }, { timeout, maxRetries: 1 });
     if (response.stop_reason !== "pause_turn") break;
     messages = [...messages, { role: "assistant", content: response.content }];
   }
@@ -52,12 +52,25 @@ const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 const GEMINI_LAST = "macave.gemini.model";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function geminiCall(key, model, body) {
-  const res = await fetch(`${GEMINI_URL}/${model}:generateContent`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-    body: JSON.stringify(body),
-  });
+async function geminiCall(key, model, body, timeoutMs = 45000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  let res;
+  try {
+    res = await fetch(`${GEMINI_URL}/${model}:generateContent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+    });
+  } catch (err) {
+    if (err.name !== "AbortError") throw err;
+    const e = new Error("L'IA met trop de temps à répondre.");
+    e.status = 408;
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const err = new Error(data.error?.message || `Erreur ${res.status}`);
@@ -91,21 +104,46 @@ function readLast() {
   try { return localStorage.getItem(GEMINI_LAST); } catch { return null; }
 }
 
-async function geminiComplete(key, { system, text, image, json, web }) {
+// Réflexion réduite pour les modèles Gemini 3 (réponse plus rapide) quand la tâche est simple.
+const thinkingFor = (model, effort) =>
+  /^gemini-3/.test(model) && effort !== "high" ? { thinkingConfig: { thinkingLevel: "low" } } : null;
+
+async function geminiComplete(key, { system, text, image, json, web, effort, timeout = 90000 }) {
   const parts = [];
   if (image) parts.push({ inline_data: { mime_type: image.mediaType, data: image.base64 } });
   parts.push({ text });
   const body = { contents: [{ role: "user", parts }] };
   if (system) body.systemInstruction = { parts: [{ text: system }] };
-  if (json) body.generationConfig = { responseMimeType: "application/json" };
+  // Le format JSON forcé n'est pas compatible avec la recherche Google sur tous les modèles.
+  const baseConfig = json && !web ? { responseMimeType: "application/json" } : {};
   if (web) body.tools = [{ google_search: {} }];
+  const deadline = Date.now() + timeout;
+  const bodyFor = (model, withThinking = true) => {
+    const generationConfig = { ...baseConfig, ...(withThinking ? thinkingFor(model, effort) : null) };
+    return Object.keys(generationConfig).length ? { ...body, generationConfig } : body;
+  };
+  const call = async (model) => {
+    const left = deadline - Date.now();
+    if (left < 3000) {
+      const e = new Error("L'IA met trop de temps à répondre.");
+      e.status = 408;
+      throw e;
+    }
+    try {
+      return await geminiCall(key, model, bodyFor(model), Math.min(left, 45000));
+    } catch (err) {
+      // Paramètre de réflexion refusé par ce modèle : nouvel essai sans.
+      if (err.status === 400 && /thinking/i.test(err.message)) return geminiCall(key, model, bodyFor(model, false), Math.min(deadline - Date.now(), 45000));
+      throw err;
+    }
+  };
 
   const tried = new Set();
   const errors = [];
   let queue = [...new Set([readLast(), ...GEMINI_MODELS].filter(Boolean))];
   let discovered = false;
 
-  while (queue.length || !discovered) {
+  while ((queue.length || !discovered) && deadline - Date.now() > 3000) {
     if (!queue.length) {
       discovered = true;
       queue = (await discoverModels(key)).filter((m) => !tried.has(m)).slice(0, 4);
@@ -115,14 +153,15 @@ async function geminiComplete(key, { system, text, image, json, web }) {
     tried.add(model);
     let data;
     try {
-      data = await geminiCall(key, model, body);
+      data = await call(model);
     } catch (err) {
       if (isKeyError(err)) throw err;
+      if (err.status === 408) throw err; // délai dépassé : inutile d'enchaîner d'autres modèles
       let last = err;
       if (err.status >= 500) {
         // Surcharge passagère : un nouvel essai après une courte pause.
         await sleep(1500);
-        try { data = await geminiCall(key, model, body); } catch (err2) { last = err2; }
+        try { data = await call(model); } catch (err2) { last = err2; }
       }
       if (!data) {
         errors.push({ model, err: last });
@@ -172,6 +211,7 @@ function friendlyError(err, name) {
       ? "Quota gratuit Gemini atteint, réessayez dans une minute (ou demain si la limite du jour est atteinte)."
       : "Trop de requêtes, réessayez dans un instant.";
   }
+  if (status === 408) return "L'IA met trop de temps à répondre. Réessayez, idéalement sans la recherche internet.";
   if (status >= 500) return `Service ${name} surchargé ou indisponible, réessayez dans quelques minutes. (Détail : ${msg})`;
   if (err instanceof TypeError) return "Connexion impossible (êtes-vous hors ligne ?).";
   return msg;
@@ -259,41 +299,58 @@ function describe(w) {
     .join("\n");
 }
 
+// Accord mets-vins : réponse courte et structurée (3 bouteilles maximum) pour aller vite.
+// `cellar` est déjà présélectionné par l'application ; chaque vin est désigné par son numéro.
 export async function pairWines(ai, meal, cellar, useWeb) {
   const year = new Date().getFullYear();
   const inventory = cellar
     .map(
-      (w) =>
-        `- ${describe(w).replace(/\n/g, " | ")} | Quantité : ${w.quantity}` +
-        ` | Maturité (${year}) : ${w.maturityLabel}` +
-        ` | Rangement : ${w.auFrais ? "au frais (prête à servir)" : "en carton"}` +
-        (w.boireDe || w.boireJusqua ? ` (à boire ${w.boireDe ?? "?"}–${w.boireJusqua ?? "?"})` : "") +
-        (w.commentaire ? ` | Commentaire : ${w.commentaire}` : ""),
+      (w, i) =>
+        `#${i + 1} ${describe(w).replace(/\n/g, " | ")} | ${w.maturityLabel}` +
+        (w.auFrais ? " | au frais" : "") +
+        (w.commentaire ? ` | Note : ${w.commentaire.slice(0, 160)}` : ""),
     )
     .join("\n");
 
   const req = {
-    effort: "medium",
-    system:
-      "Tu es un sommelier expert. Tu recommandes uniquement des bouteilles présentes dans la cave de l'utilisateur. " +
-      "Réponds en français, en Markdown concis et lisible sur téléphone : titres courts, listes à puces, pas de tableau.",
+    effort: "low",
+    json: true,
+    timeout: useWeb ? 60000 : 50000,
+    system: "Tu es un sommelier expert, concis. Tu choisis uniquement parmi les bouteilles listées.",
     text:
-      `Repas prévu : ${meal}\n\nMa cave (année ${year}) :\n${inventory}\n\n` +
-      `Analyse chaque fiche et ses commentaires, puis recommande les meilleurs accords pour ce repas (plat par plat si utile). ` +
-      `Priorité aux vins dont la maturité est atteinte, et surtout à ceux à boire rapidement ou dont l'apogée est dépassée, ` +
-      `tant que l'accord reste bon. Évite les vins trop jeunes sauf s'il n'y a pas d'alternative (et dis-le).\n` +
-      `Pour chaque recommandation : rang, nom de la bouteille, pourquoi l'accord fonctionne, état de maturité, ` +
-      `température de service et éventuel carafage. Termine par un plan B si la cave manque d'un accord idéal.`,
+      `Repas : ${meal}\nAnnée : ${year}\n\nBouteilles disponibles :\n${inventory}\n\n` +
+      `Choisis les 3 meilleurs accords au maximum (moins si la cave ne s'y prête pas). À accord comparable, ` +
+      `privilégie les vins à boire rapidement ou à maturité plutôt que les vins trop jeunes.\n` +
+      `Réponds uniquement avec ce JSON :\n` +
+      `{"recommandations":[{"n":numéro de la bouteille,"plat":"plat concerné si plusieurs plats, sinon \"\"",` +
+      `"pourquoi":"une ou deux phrases","service":"température et carafage, très court"}],` +
+      `"conseil":"une phrase : remarque ou plan B si l'accord idéal manque dans la cave"}`,
   };
 
-  if (!useWeb) return complete(ai, req);
-  try {
-    return await complete(ai, { ...req, web: true });
-  } catch (err) {
-    // La recherche internet peut être refusée (quota de recherche gratuit épuisé, clé ou modèle
-    // sans accès) : on refait la demande sans elle plutôt que d'échouer.
-    if (/invalide|hors ligne/i.test(err.message)) throw err;
-    const text = await complete(ai, { ...req, web: false });
-    return `${text}\n\n---\n*Recherche internet indisponible pour cette demande (${err.message}) : recommandations établies sans elle.*`;
+  let text;
+  let note = "";
+  if (!useWeb) {
+    text = await complete(ai, req);
+  } else {
+    try {
+      text = await complete(ai, { ...req, web: true });
+    } catch (err) {
+      // Recherche internet refusée ou trop lente : nouvelle demande sans elle.
+      if (/invalide|hors ligne/i.test(err.message)) throw err;
+      text = await complete(ai, { ...req, web: false, timeout: 40000 });
+      note = `Recherche internet indisponible (${err.message}) : recommandations établies sans elle.`;
+    }
   }
+
+  let data;
+  try {
+    data = extractJson(text);
+  } catch {
+    return { recommandations: [], conseil: "", texte: text, note };
+  }
+  const recommandations = (Array.isArray(data.recommandations) ? data.recommandations : [])
+    .map((r) => ({ ...r, wine: cellar[Number(r.n) - 1] }))
+    .filter((r) => r.wine)
+    .slice(0, 3);
+  return { recommandations, conseil: String(data.conseil || ""), note };
 }

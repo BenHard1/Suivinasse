@@ -1,5 +1,6 @@
 import { recognizeLabel, estimateWindow, pairWines, PROVIDERS } from "./ai.js";
 import * as store from "./storage.js";
+import { rankForMeal, PROFILE_LABELS } from "./pairing.js";
 
 // ---------- Stockage ----------
 const PROVIDER_KEY = "macave.provider";
@@ -481,22 +482,58 @@ function renderMaturity() {
 }
 
 // ---------- Accords ----------
+// 1) Suggestions immédiates calculées sur le téléphone (sans IA, toujours disponibles).
+// 2) Avis du sommelier IA sur une présélection de la cave, affiché dès qu'il arrive.
+const recoHtml = (wine, why) =>
+  `<div class="reco">${why ? `<div class="reco-why">${why}</div>` : ""}${cardHtml(wine)}</div>`;
+
 $("#btn-pair").onclick = async () => {
   const meal = $("#meal").value.trim();
   const out = $("#pairing-result");
   if (!meal) return toast("Décrivez le repas à servir.");
-  const cellar = state.wines
-    .filter((w) => w.quantity > 0)
-    .map((w) => ({ ...w, photo: undefined, history: undefined, maturityLabel: maturity(w).label }));
-  if (!cellar.length) return toast("Votre cave est vide.");
+  const available = state.wines.filter((w) => w.quantity > 0);
+  if (!available.length) return toast("Votre cave est vide.");
+
+  const ranked = rankForMeal(meal, available, { maturity, kindOf: (w) => catOf(w.category)?.kind });
+  const quick = ranked.filter((r) => r.fit > 0).slice(0, 3);
+  out.innerHTML = `<section class="res-block">
+      <h3 class="res-title">Suggestions immédiates</h3>
+      ${quick.length
+        ? quick.map((r) => recoHtml(r.wine, esc(`${PROFILE_LABELS[r.profile]} : adapté à ce plat`))).join("")
+        : `<p class="muted small">Aucune bouteille de la cave ne correspond clairement à ce repas.</p>`}
+    </section>
+    <section class="res-block" id="ai-part"></section>`;
+  bindCards(out);
+
+  const ai = aiConfig();
+  const aiPart = $("#ai-part");
+  if (!ai.key) {
+    aiPart.innerHTML = `<p class="muted small">Ajoutez une clé IA dans Réglages pour obtenir l'avis détaillé du sommelier.</p>`;
+    return;
+  }
   const btn = $("#btn-pair");
   btn.disabled = true;
-  out.innerHTML = wineLoader("Le sommelier étudie votre cave…");
+  aiPart.innerHTML = wineLoader("Le sommelier affine la sélection…");
+  // Présélection : les 25 bouteilles les plus pertinentes suffisent et accélèrent la réponse.
+  const candidates = ranked.slice(0, 25).map((r) => ({ ...r.wine, photo: undefined, history: undefined, maturityLabel: r.maturity.label }));
   try {
-    const md = await pairWines(aiConfig(), meal, cellar, $("#use-web").checked);
-    out.innerHTML = `<div class="md">${markdown(md)}</div>`;
+    const res = await pairWines(ai, meal, candidates, $("#use-web").checked);
+    const byId = (id) => state.wines.find((w) => w.id === id);
+    aiPart.innerHTML = `<h3 class="res-title">L'avis du sommelier</h3>
+      ${res.recommandations.map((r) => {
+        const wine = byId(r.wine.id) || r.wine;
+        const why = [r.plat && `<b>${esc(r.plat)}</b>`, esc(r.pourquoi || ""), r.service && `<span class="reco-service">${esc(r.service)}</span>`]
+          .filter(Boolean).join("<br>");
+        return recoHtml(wine, why);
+      }).join("")}
+      ${res.texte ? `<div class="md">${markdown(res.texte)}</div>` : ""}
+      ${res.conseil ? `<p class="reco-tip">${esc(res.conseil)}</p>` : ""}
+      ${!res.recommandations.length && !res.texte ? `<p class="muted small">Le sommelier n'a pas trouvé d'accord adapté dans votre cave.</p>` : ""}
+      ${res.note ? `<p class="muted small">${esc(res.note)}</p>` : ""}`;
+    bindCards(aiPart);
   } catch (err) {
-    out.innerHTML = `<p class="b-past badge">${esc(err.message)}</p>`;
+    aiPart.innerHTML = `<p class="b-past badge">${esc(err.message)}</p>
+      <p class="muted small">Les suggestions immédiates ci-dessus restent valables.</p>`;
   } finally {
     btn.disabled = false;
   }

@@ -8,7 +8,7 @@ Web app (PWA) installable sur l'écran d'accueil du téléphone pour gérer sa c
 - **Ajouter** (bouton **+** en bas à droite de la page Cave) : fiche avec cuvée, domaine, région, appellation, cépages, millésime, fenêtre de dégustation, rangement « au frais », commentaire, et **nombre de bouteilles rentrées** (1, 3, 6, 12 ou libre). Si la même cuvée/millésime existe déjà, les bouteilles sont ajoutées à la fiche existante.
 - **Reconnaissance photo** : photographiez l'étiquette ou choisissez une photo de la galerie, l'IA (Gemini ou Claude) pré-remplit la fiche et estime la fenêtre de dégustation.
 - **Maturité** : liste des vins à maturité, triés par urgence (apogée dépassée → à boire rapidement → à maturité).
-- **Accords mets & vins** : décrivez le repas, l'IA analyse toutes les fiches et commentaires de votre cave (avec recherche internet si activée) et recommande les bouteilles par ordre de priorité, en privilégiant celles dont la maturité est atteinte.
+- **Accords mets & vins** : décrivez le repas ; des **suggestions immédiates** (sans IA, calculées sur le téléphone à partir de mots-clés du repas, du style de chaque vin et de sa maturité) s'affichent aussitôt, puis **l'avis du sommelier IA** (3 bouteilles maximum, avec explication et service) sur une présélection des 25 bouteilles les plus pertinentes. Recherche internet en option (plus lente), délai maximal pour ne jamais rester bloqué.
 - **Cépages & terroirs** : carte de France interactive des régions viticoles ; un appui sur une région affiche ses cépages rouges et blancs, son terroir, ses appellations phares, ses styles et les bouteilles de la cave qui en viennent ; l'interrupteur « Dans ma cave » ne garde en couleur que les régions représentées dans la cave, avec leur nombre de bouteilles.
 - **Réglages** : moteur IA et clé API, gestion des catégories, export/import JSON.
 
@@ -65,6 +65,7 @@ Pour tester en local : `python3 -m http.server` puis ouvrir http://localhost:800
 - `storage.js`, `config.js`, `supabase/schema.sql` — comptes et synchronisation
 - `assets/`, `icons/` — logo et icônes
 - `terroir.js`, `france-map.js` — données des régions viticoles et fond de carte des départements ([svg-maps](https://github.com/VictorCazanave/svg-maps) © Victor Cazanave, CC BY 4.0)
+- `pairing.js` — accords rapides sans IA (profils de vins, mots-clés des plats, maturité)
 - `ai.js` — appels IA Gemini / Claude (reconnaissance d'étiquette, estimation d'apogée, accords)
 - `vendor/` — SDK officiels `@anthropic-ai/sdk` et `@supabase/supabase-js` embarqués (aucune étape de build)
 - `sw.js`, `manifest.webmanifest` — installation et fonctionnement hors ligne
