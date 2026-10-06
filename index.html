@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Ma Cave</title>
+  <meta name="theme-color" content="#5b1a2b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ma Cave">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1 id="view-title">Ma Cave</h1>
+    <span id="total-count" class="pill"></span>
+  </header>
+
+  <main>
+    <!-- CAVE -->
+    <section id="view-cave" class="view active">
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="Rechercher (cuvée, domaine, cépage…)">
+      </div>
+      <div id="cat-filter" class="chips"></div>
+      <label class="toggle"><input type="checkbox" id="show-empty"> Afficher les bouteilles épuisées</label>
+      <div id="cave-list"></div>
+    </section>
+
+    <!-- AJOUT / EDITION -->
+    <section id="view-add" class="view">
+      <div class="photo-box">
+        <label class="btn btn-secondary btn-block" for="photo-input">📷 Remplir depuis une photo d'étiquette</label>
+        <input id="photo-input" type="file" accept="image/*" capture="environment" hidden>
+        <p id="photo-status" class="muted small"></p>
+        <img id="photo-preview" alt="" hidden>
+      </div>
+
+      <form id="wine-form" autocomplete="off">
+        <input type="hidden" name="id">
+        <label>Catégorie
+          <select name="category" required></select>
+        </label>
+        <label>Nom de la cuvée
+          <input name="cuvee" placeholder="ex : Les Clos">
+        </label>
+        <label>Nom du domaine
+          <input name="domaine" placeholder="ex : Domaine William Fèvre">
+        </label>
+        <label>Appellation / région <span class="muted">(facultatif)</span>
+          <input name="appellation" placeholder="ex : Chablis Grand Cru">
+        </label>
+        <label>Cépages
+          <input name="cepages" placeholder="ex : Chardonnay">
+        </label>
+        <label>Année de vendanges (millésime)
+          <input name="millesime" type="number" inputmode="numeric" min="1800" max="2100" placeholder="ex : 2019">
+        </label>
+
+        <fieldset>
+          <legend>Fenêtre de dégustation</legend>
+          <div class="row">
+            <label>À boire à partir de
+              <input name="boireDe" type="number" inputmode="numeric" min="1800" max="2200">
+            </label>
+            <label>Jusqu'à
+              <input name="boireJusqua" type="number" inputmode="numeric" min="1800" max="2200">
+            </label>
+          </div>
+          <button type="button" id="btn-estimate" class="btn btn-ghost btn-small">✨ Estimer avec l'IA</button>
+          <p class="muted small">Laisser vide : une estimation par défaut selon la catégorie est utilisée.</p>
+        </fieldset>
+
+        <label id="qty-label">Nombre de bouteilles rentrées
+          <div class="qty-picker">
+            <button type="button" data-qty="1">1</button>
+            <button type="button" data-qty="3">3</button>
+            <button type="button" data-qty="6" class="sel">6</button>
+            <button type="button" data-qty="12">12</button>
+            <input name="quantity" type="number" inputmode="numeric" min="0" value="6" required>
+          </div>
+        </label>
+
+        <label>Commentaire
+          <textarea name="commentaire" rows="3" placeholder="Notes de dégustation, prix, lieu d'achat, occasion…"></textarea>
+        </label>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary btn-block" id="btn-save">Enregistrer</button>
+          <button type="button" class="btn btn-ghost btn-block" id="btn-cancel" hidden>Annuler</button>
+          <button type="button" class="btn btn-danger btn-block" id="btn-delete" hidden>Supprimer la fiche</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- MATURITE -->
+    <section id="view-maturity" class="view">
+      <p class="muted">Vins arrivés à maturité, triés par urgence : ceux à boire en premier sont en haut.</p>
+      <div id="maturity-list"></div>
+    </section>
+
+    <!-- ACCORDS -->
+    <section id="view-pairing" class="view">
+      <label>Quel repas voulez-vous servir ?
+        <textarea id="meal" rows="3" placeholder="ex : Gigot d'agneau aux herbes, gratin dauphinois, plateau de fromages"></textarea>
+      </label>
+      <label class="toggle"><input type="checkbox" id="use-web" checked> Autoriser la recherche internet</label>
+      <button id="btn-pair" class="btn btn-primary btn-block">🍷 Trouver l'accord parfait dans ma cave</button>
+      <div id="pairing-result" class="result"></div>
+    </section>
+
+    <!-- REGLAGES -->
+    <section id="view-settings" class="view">
+      <h2>Clé API Claude</h2>
+      <p class="muted small">Nécessaire pour la reconnaissance photo et les accords mets‑vins. Elle reste stockée uniquement sur ce téléphone. Créez-la sur <a href="https://console.anthropic.com/" target="_blank" rel="noopener">console.anthropic.com</a>.</p>
+      <input id="api-key" type="password" placeholder="sk-ant-…" autocomplete="off">
+      <button id="btn-save-key" class="btn btn-secondary btn-block">Enregistrer la clé</button>
+
+      <h2>Catégories</h2>
+      <ul id="cat-list" class="cat-list"></ul>
+      <div class="row">
+        <input id="new-cat" placeholder="Nouvelle catégorie (ex : Cognac)">
+        <select id="new-cat-kind">
+          <option value="vin">Vin (vieillit)</option>
+          <option value="spiritueux">Spiritueux</option>
+        </select>
+      </div>
+      <button id="btn-add-cat" class="btn btn-secondary btn-block">Ajouter la catégorie</button>
+
+      <h2>Sauvegarde</h2>
+      <p class="muted small">Les données sont stockées dans ce navigateur. Exportez régulièrement une sauvegarde.</p>
+      <button id="btn-export" class="btn btn-secondary btn-block">⬇️ Exporter (JSON)</button>
+      <label class="btn btn-secondary btn-block" for="import-file">⬆️ Importer une sauvegarde</label>
+      <input id="import-file" type="file" accept="application/json,.json" hidden>
+    </section>
+  </main>
+
+  <nav class="tabbar">
+    <button data-view="cave" class="active"><span>🍾</span>Cave</button>
+    <button data-view="add"><span>➕</span>Ajouter</button>
+    <button data-view="maturity"><span>⏳</span>Maturité</button>
+    <button data-view="pairing"><span>🍽️</span>Accords</button>
+    <button data-view="settings"><span>⚙️</span>Réglages</button>
+  </nav>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
