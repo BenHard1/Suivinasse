@@ -8,6 +8,7 @@
   --primary-text: #f8f1e7;
   --brand: #63001f;
   --wine: #7a0a2c;
+  --halo: #efd3c3;
   --accent: #b3582b;
   --danger: #b3261e;
   --ok: #2e7d32;
@@ -26,6 +27,7 @@
     --primary-text: #fffaf3;
     --accent: #d8794a;
     --wine: #b0213f;
+    --halo: #55302a;
     --danger: #ef5350;
     --ok: #66bb6a;
     --warn: #ffa726;
@@ -54,19 +56,18 @@ body {
   transition: padding .25s ease, box-shadow .25s ease;
 }
 body { padding-top: calc(94px + env(safe-area-inset-top)); }
-.brand { grid-column: 2; display: grid; place-items: center; }
-.brand img { grid-area: 1 / 1; height: 78px; width: auto; display: block; transition: opacity .2s ease, height .25s ease; }
-.brand-icon { opacity: 0; }
+.brand-full { grid-column: 2; grid-row: 1; height: 78px; width: auto; display: block; transition: opacity .2s ease, height .25s ease; }
+/* Icône seule (sans texte), calée à gauche de la barre quand l'en-tête est réduit. */
+.brand-icon { grid-column: 1; grid-row: 1; justify-self: start; height: 40px; width: auto; display: block; opacity: 0; transition: opacity .2s ease; }
 .topbar.compact { padding-top: calc(4px + env(safe-area-inset-top)); padding-bottom: 4px; box-shadow: 0 2px 10px rgba(0, 0, 0, .25); }
-.topbar.compact .brand img { height: 40px; }
-.topbar.compact .brand-full { opacity: 0; }
+.topbar.compact .brand-full { height: 40px; opacity: 0; }
 .topbar.compact .brand-icon { opacity: 1; }
-.topbar-right { grid-column: 3; justify-self: end; display: flex; align-items: center; gap: 6px; }
+.topbar-right { grid-column: 3; grid-row: 1; justify-self: end; display: flex; align-items: center; gap: 6px; }
 @media (max-width: 360px) {
-  .brand img { height: 64px; }
+  .brand-full { height: 64px; }
   body { padding-top: calc(80px + env(safe-area-inset-top)); }
 }
-@media (prefers-reduced-motion: reduce) { .topbar, .brand, .brand img { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .topbar, .brand-full, .brand-icon { transition: none; } }
 .sync { display: inline-flex; }
 .sync .ico { width: 20px; height: 20px; stroke-width: 1.8; }
 .sync[data-state="syncing"] { animation: pulse 1s ease-in-out infinite alternate; }
@@ -250,15 +251,15 @@ legend { font-weight: 600; padding: 0 4px; }
 .tabbar button::after {
   content: ""; position: absolute; z-index: 0; top: -14px; left: 50%; width: 60px; height: 30px; margin-left: -30px;
   border-radius: 60px 60px 0 0;
-  background: radial-gradient(ellipse at 50% 100%, rgba(179, 88, 43, .55), rgba(179, 88, 43, .18) 45%, transparent 72%);
+  background: var(--halo);
   opacity: 0; transform: scaleY(.4); transform-origin: bottom; transition: opacity .25s ease, transform .25s ease;
 }
 .tabbar button.active::after { opacity: 1; transform: none; }
 .tabbar button.active { color: var(--primary); font-weight: 700; }
 .tabbar button.active:not([data-view="cave"]) .ico { transform: translateY(-3px); stroke-width: 1.9; }
 /* Halo autour de la bulle quand « Ma cave » est l'onglet actif. */
-.tabbar button[data-view="cave"]::after { top: -40px; width: 76px; height: 40px; margin-left: -38px; }
-.tabbar button[data-view="cave"].active .ico { box-shadow: 0 4px 10px rgba(99, 0, 31, .3), 0 0 0 5px rgba(179, 88, 43, .3); }
+.tabbar button[data-view="cave"]::after { display: none; } /* son halo est l'anneau autour de la bulle */
+.tabbar button[data-view="cave"].active .ico { box-shadow: 0 4px 10px rgba(99, 0, 31, .3), 0 0 0 5px var(--halo); }
 @media (prefers-reduced-motion: reduce) {
   .tabbar .ico, .tabbar button::before, .tabbar button::after { transition: none; }
 }

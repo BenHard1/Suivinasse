@@ -1,5 +1,5 @@
 // Cache hors ligne de l'application (les appels IA nécessitent une connexion).
-const CACHE = "macave-v17";
+const CACHE = "macave-v18";
 const ASSETS = ["./", "index.html", "styles.css", "app.js", "ai.js", "storage.js", "config.js", "terroir.js", "france-map.js", "pairing.js", "manifest.webmanifest",
   "vendor/anthropic-sdk.js", "vendor/supabase.js", "assets/logo-on-dark.jpg", "assets/logo-on-light.jpg", "assets/logo-icon-on-dark.jpg",
   "icons/favicon.png", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png"];
