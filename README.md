@@ -1,4 +1,4 @@
-# Ma Cave — suivi de cave à vin
+# Wine in my Cellar — suivi de cave à vin
 
 Web app (PWA) installable sur l'écran d'accueil du téléphone pour gérer sa cave à vin.
 
@@ -11,7 +11,30 @@ Web app (PWA) installable sur l'écran d'accueil du téléphone pour gérer sa c
 - **Accords mets & vins** : décrivez le repas, l'IA analyse toutes les fiches et commentaires de votre cave (avec recherche internet si activée) et recommande les bouteilles par ordre de priorité, en privilégiant celles dont la maturité est atteinte.
 - **Réglages** : clé API, gestion des catégories, export/import JSON.
 
-Les données sont stockées localement dans le navigateur du téléphone (pensez à exporter une sauvegarde de temps en temps).
+## Où sont stockées les données ?
+
+| Donnée | Avec comptes (Supabase configuré) | Sans compte |
+|---|---|---|
+| Cave (fiches, quantités, commentaires, miniatures photo, catégories) | Base de données Supabase, une ligne par compte, protégée par des règles RLS (chaque compte ne lit/écrit que sa cave) + copie locale pour le hors-ligne | Navigateur du téléphone uniquement (`localStorage`) |
+| Mot de passe | Géré par Supabase Auth (haché, jamais visible) | — |
+| Clé API Claude | Navigateur du téléphone uniquement | idem |
+| Photos d'étiquette | Envoyées à l'API Claude le temps de l'analyse ; seule une miniature 160 px est gardée dans la fiche | idem |
+
+Avec un compte, la cave suit l'utilisateur sur tous ses appareils ; hors ligne, les modifications sont gardées puis envoyées au retour du réseau.
+
+## Comptes (pour partager l'app avec ses amis)
+
+Les comptes reposent sur [Supabase](https://supabase.com) (offre gratuite suffisante). À faire une seule fois :
+
+1. Créer un compte sur supabase.com → **New project** (région Europe, notez le mot de passe de la base).
+2. **SQL Editor → New query** : coller le contenu de [`supabase/schema.sql`](supabase/schema.sql) → **Run**.
+3. **Authentication → URL Configuration** : mettre l'adresse du site (`https://benhard1.github.io/Suivinasse/`) dans *Site URL* et *Redirect URLs* (pour les liens de confirmation et de mot de passe oublié).
+4. *(Optionnel)* **Authentication → Sign In / Providers → Email** : désactiver *Confirm email* pour que les amis puissent se connecter sans valider leur e-mail.
+5. **Project Settings → API** : copier *Project URL* et la clé *anon public* dans [`config.js`](config.js).
+
+Tant que `config.js` est vide, l'application fonctionne sans compte (données sur le téléphone). À la première connexion, l'app propose de transférer les bouteilles déjà saisies sur le téléphone vers le compte.
+
+Chaque ami crée son compte depuis l'écran de connexion et a sa propre cave. Pour la photo et les accords, chacun saisit sa propre clé API Claude dans Réglages.
 
 ## Maturité
 
@@ -36,6 +59,8 @@ Pour tester en local : `python3 -m http.server` puis ouvrir http://localhost:800
 ## Structure
 
 - `index.html`, `styles.css`, `app.js` — interface et logique
+- `storage.js`, `config.js`, `supabase/schema.sql` — comptes et synchronisation
+- `assets/`, `icons/` — logo et icônes
 - `ai.js` — appels à l'API Claude (reconnaissance d'étiquette, estimation d'apogée, accords)
-- `vendor/anthropic-sdk.js` — SDK officiel `@anthropic-ai/sdk` embarqué (aucune étape de build)
-- `sw.js`, `manifest.webmanifest`, `icons/` — installation et fonctionnement hors ligne
+- `vendor/` — SDK officiels `@anthropic-ai/sdk` et `@supabase/supabase-js` embarqués (aucune étape de build)
+- `sw.js`, `manifest.webmanifest` — installation et fonctionnement hors ligne

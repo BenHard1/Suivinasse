@@ -1,7 +1,7 @@
 import { recognizeLabel, estimateWindow, pairWines } from "./ai.js";
+import * as store from "./storage.js";
 
 // ---------- Stockage ----------
-const STORE_KEY = "macave.v1";
 const API_KEY = "macave.apikey";
 
 const DEFAULT_CATEGORIES = [
@@ -25,15 +25,9 @@ const DEFAULT_WINDOWS = {
   Porto: [5, 40],
 };
 
-function loadState() {
-  try {
-    const s = JSON.parse(localStorage.getItem(STORE_KEY));
-    if (s && Array.isArray(s.wines)) return s;
-  } catch {}
-  return { wines: [], categories: DEFAULT_CATEGORIES };
-}
-let state = loadState();
-const save = () => localStorage.setItem(STORE_KEY, JSON.stringify(state));
+const defaultState = () => ({ wines: [], categories: structuredClone(DEFAULT_CATEGORIES) });
+let state = defaultState();
+const save = () => store.save(state);
 const apiKey = () => localStorage.getItem(API_KEY) || "";
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -87,7 +81,7 @@ function wineTitle(w) {
 }
 
 // ---------- Navigation ----------
-const TITLES = { cave: "Ma Cave", add: "Ajouter", maturity: "À maturité", pairing: "Accords mets & vins", settings: "Réglages" };
+const TITLES = { cave: "Ma cave", add: "Ajouter", maturity: "À maturité", pairing: "Accords mets & vins", settings: "Réglages" };
 function show(view) {
   document.querySelectorAll(".view").forEach((v) => v.classList.toggle("active", v.id === `view-${view}`));
   document.querySelectorAll(".tabbar button").forEach((b) => b.classList.toggle("active", b.dataset.view === view));
@@ -439,6 +433,10 @@ function markdown(src) {
 
 // ---------- Réglages ----------
 function renderSettings() {
+  const user = store.currentUser();
+  $("#account-box").hidden = !user;
+  $("#local-box").hidden = Boolean(user);
+  if (user) $("#account-email").textContent = `Connecté : ${user.email}`;
   $("#api-key").value = apiKey();
   $("#cat-list").innerHTML = state.categories
     .map((c, i) => {
@@ -503,8 +501,113 @@ function render() {
   if ($("#view-settings").classList.contains("active")) renderSettings();
 }
 
-resetForm();
-render();
+// ---------- Comptes ----------
+const authForm = $("#auth-form");
+let authMode = "login"; // login | signup | forgot | newpass
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const t = {
+    login: ["Connexion", "Se connecter", "Créer un compte"],
+    signup: ["Créer un compte", "Créer mon compte", "J'ai déjà un compte"],
+    forgot: ["Mot de passe oublié", "Recevoir un lien", "Retour à la connexion"],
+    newpass: ["Nouveau mot de passe", "Enregistrer", "Retour à la connexion"],
+  }[mode];
+  $("#auth-title").textContent = t[0];
+  $("#auth-submit").textContent = t[1];
+  $("#auth-switch").textContent = t[2];
+  $("#auth-forgot").hidden = mode !== "login";
+  authForm.email.closest("label").hidden = mode === "newpass";
+  authForm.email.required = mode !== "newpass";
+  $("#auth-pass-label").hidden = mode === "forgot";
+  authForm.password.required = mode !== "forgot";
+  authForm.password.autocomplete = mode === "login" ? "current-password" : "new-password";
+  authMsg("");
+}
+
+function authMsg(text, ok = false) {
+  const el = $("#auth-msg");
+  el.textContent = text;
+  el.className = `small ${ok ? "msg-ok" : "msg-err"}`;
+}
+
+$("#auth-switch").onclick = () => setAuthMode(authMode === "login" ? "signup" : "login");
+$("#auth-forgot").onclick = () => setAuthMode("forgot");
+
+authForm.onsubmit = async (e) => {
+  e.preventDefault();
+  const email = authForm.email.value.trim();
+  const password = authForm.password.value;
+  const btn = $("#auth-submit");
+  btn.disabled = true;
+  try {
+    if (authMode === "login") {
+      await store.signIn(email, password);
+      await enterApp();
+    } else if (authMode === "signup") {
+      const connected = await store.signUp(email, password);
+      if (connected) await enterApp();
+      else { setAuthMode("login"); authMsg("Compte créé ! Validez votre adresse via l'e-mail reçu, puis connectez-vous.", true); }
+    } else if (authMode === "forgot") {
+      await store.resetPassword(email);
+      authMsg("Si un compte existe, un lien de réinitialisation vient d'être envoyé.", true);
+    } else if (authMode === "newpass") {
+      await store.updatePassword(password);
+      await enterApp();
+      toast("Mot de passe modifié");
+    }
+  } catch (err) {
+    authMsg(err.message);
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+$("#btn-logout").onclick = async () => {
+  if (!confirm("Se déconnecter de ce téléphone ?")) return;
+  await store.signOut();
+  state = defaultState();
+  authForm.reset();
+  setAuthMode("login");
+  $("#auth").hidden = false;
+};
+
+const SYNC_ICONS = { syncing: ["⟳", "Synchronisation…"], ok: ["☁︎", "Synchronisé"], offline: ["⚠︎", "Hors ligne : les modifications seront envoyées plus tard"] };
+function syncStatus(s) {
+  const el = $("#sync-status");
+  [el.textContent, el.title] = SYNC_ICONS[s] || ["", ""];
+}
+
+async function enterApp() {
+  const user = store.currentUser();
+  state = await store.load(defaultState);
+  // Première connexion : proposer de reprendre la cave déjà saisie sans compte sur ce téléphone.
+  if (user && store.hasLegacyData() && !state.wines.length &&
+      confirm("Des bouteilles sont déjà enregistrées sur ce téléphone. Les ajouter à votre compte ?")) {
+    state = store.takeLegacyData();
+    save();
+  }
+  $("#auth").hidden = true;
+  activeCat = "Toutes";
+  resetForm();
+  show("cave");
+}
+
+async function boot() {
+  store.watch({
+    remoteChange: (data) => { state = data; render(); },
+    syncStatus,
+  });
+  if (!store.cloudEnabled) return enterApp();
+  store.onPasswordRecovery(() => { $("#auth").hidden = false; setAuthMode("newpass"); });
+  let user = null;
+  try { user = await store.restoreSession(); } catch {}
+  if (user) return enterApp();
+  setAuthMode("login");
+  $("#auth").hidden = false;
+}
+
+boot();
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js").catch(() => {});

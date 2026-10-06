@@ -3,22 +3,47 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Ma Cave</title>
-  <meta name="theme-color" content="#5b1a2b">
+  <title>Wine in my Cellar</title>
+  <meta name="theme-color" content="#63001f">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Ma Cave">
+  <meta name="apple-mobile-web-app-title" content="Wine Cellar">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/favicon.png" type="image/png">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!-- CONNEXION -->
+  <div id="auth" class="auth" hidden>
+    <picture>
+      <source srcset="assets/logo-on-dark.jpg" media="(prefers-color-scheme: dark)">
+      <img class="auth-logo" src="assets/logo-on-light.jpg" alt="Wine in my Cellar">
+    </picture>
+    <form id="auth-form" class="auth-card" autocomplete="on">
+      <h2 id="auth-title">Connexion</h2>
+      <label>E-mail
+        <input name="email" type="email" autocomplete="email" required>
+      </label>
+      <label id="auth-pass-label">Mot de passe
+        <input name="password" type="password" autocomplete="current-password" minlength="6" required>
+      </label>
+      <p id="auth-msg" class="small"></p>
+      <button type="submit" class="btn btn-primary btn-block" id="auth-submit">Se connecter</button>
+      <button type="button" class="btn btn-ghost btn-block" id="auth-switch">Créer un compte</button>
+      <button type="button" class="link" id="auth-forgot">Mot de passe oublié ?</button>
+    </form>
+  </div>
+
   <header class="topbar">
-    <h1 id="view-title">Ma Cave</h1>
-    <span id="total-count" class="pill"></span>
+    <img class="brand" src="assets/logo-on-dark.jpg" alt="Wine in my Cellar">
+    <div class="topbar-right">
+      <span id="sync-status" class="sync" title=""></span>
+      <span id="total-count" class="pill"></span>
+    </div>
   </header>
+  <h1 id="view-title" class="view-title">Ma cave</h1>
 
   <main>
     <!-- CAVE -->
@@ -115,6 +140,16 @@
 
     <!-- REGLAGES -->
     <section id="view-settings" class="view">
+      <div id="account-box">
+        <h2>Mon compte</h2>
+        <p id="account-email" class="muted"></p>
+        <button id="btn-logout" class="btn btn-secondary btn-block">Se déconnecter</button>
+      </div>
+      <div id="local-box" hidden>
+        <h2>Stockage</h2>
+        <p class="muted small">Mode sans compte : la cave est enregistrée uniquement sur ce téléphone.</p>
+      </div>
+
       <h2>Clé API Claude</h2>
       <p class="muted small">Nécessaire pour la reconnaissance photo et les accords mets‑vins. Elle reste stockée uniquement sur ce téléphone. Créez-la sur <a href="https://console.anthropic.com/" target="_blank" rel="noopener">console.anthropic.com</a>.</p>
       <input id="api-key" type="password" placeholder="sk-ant-…" autocomplete="off">
