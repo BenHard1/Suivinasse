@@ -287,6 +287,8 @@ legend { font-weight: 600; padding: 0 4px; }
   position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
   display: flex; align-items: stretch; height: calc(var(--bar-h) + var(--bar-pad));
   padding-bottom: var(--bar-pad);
+  /* légère marge latérale : les libellés des bords ne touchent pas les coins arrondis de l'écran */
+  padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right));
   background: var(--brand);
 }
 .tabbar button {
