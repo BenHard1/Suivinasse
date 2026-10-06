@@ -120,6 +120,16 @@ function wineLoader(text) {
   </div>`;
 }
 
+// En-tête réduit (icône seule) dès que l'on fait défiler la page.
+const topbar = document.querySelector(".topbar");
+let compact = false;
+window.addEventListener("scroll", () => {
+  const y = window.scrollY;
+  // Seuils différents à l'aller et au retour pour éviter le clignotement.
+  if (!compact && y > 40) topbar.classList.add("compact"), (compact = true);
+  else if (compact && y < 8) topbar.classList.remove("compact"), (compact = false);
+}, { passive: true });
+
 // ---------- Navigation ----------
 const TITLES = { cave: "Ma cave", add: "Ajouter", maturity: "À maturité", pairing: "Accords mets & vins", terroir: "Cépages & terroirs", settings: "Réglages" };
 function show(view) {
