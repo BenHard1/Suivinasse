@@ -52,6 +52,9 @@ body {
    se place au vrai bas de l'écran. */
 :root { --bar-pad: env(safe-area-inset-bottom); --bar-h: 58px; }
 @media (max-width: 600px) { :root { --bar-h: 68px; } } /* barre du bas plus épaisse sur téléphone */
+/* Appli installée : 12 px de plus sous les libellés, pour qu'ils ne touchent jamais le bas de l'écran. */
+html.ios-standalone { --bar-pad: calc(env(safe-area-inset-bottom) + 12px); }
+@media (display-mode: standalone) { :root { --bar-pad: calc(env(safe-area-inset-bottom) + 12px); } }
 html { background: var(--brand); }
 body { position: relative; }
 html.ios-standalone, html.ios-standalone body { height: calc(100% + env(safe-area-inset-top)); }
