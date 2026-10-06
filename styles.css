@@ -118,7 +118,6 @@ legend { font-weight: 600; padding: 0 4px; }
 .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
 .btn-small { padding: 6px 12px; font-size: .9rem; }
 
-.toolbar { margin-bottom: 8px; }
 .chips { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 8px; scrollbar-width: none; }
 .chip {
   flex: none; border: 1px solid var(--border); background: var(--surface); color: var(--text);
@@ -210,3 +209,30 @@ legend { font-weight: 600; padding: 0 4px; }
 }
 .toast[hidden] { display: none; }
 .toast button { background: none; border: none; color: var(--accent); font: inherit; font-weight: 700; }
+
+.cat-group h4.region {
+  display: flex; justify-content: space-between; margin: 10px 2px 6px;
+  font-size: .85rem; font-weight: 600; color: var(--accent);
+}
+.store-pill {
+  display: inline-flex; align-items: center; gap: 4px; margin: 4px 0 0 4px; vertical-align: top;
+  font: inherit; font-size: .75rem; font-weight: 600; border-radius: 999px; padding: 1px 8px;
+  border: 1px solid var(--border); background: transparent; color: var(--muted);
+}
+.store-pill .ico { width: 12px; height: 12px; }
+.store-pill.frais { border-color: #5b8db8; color: #3d6f9a; background: rgba(91,141,184,.12); }
+@media (prefers-color-scheme: dark) { .store-pill.frais { color: #9cc3e6; } }
+#store-filter { padding-top: 0; }
+
+.switch { display: flex; align-items: center; gap: 10px; font-weight: 500; cursor: pointer; }
+.switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.switch-track {
+  flex: none; width: 44px; height: 26px; border-radius: 999px; background: var(--border); position: relative; transition: background .2s;
+}
+.switch-track::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s;
+}
+.switch input:checked + .switch-track { background: var(--primary); }
+.switch input:checked + .switch-track::after { transform: translateX(18px); }
+.switch input:focus-visible + .switch-track { outline: 2px solid var(--accent); outline-offset: 2px; }

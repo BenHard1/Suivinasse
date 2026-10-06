@@ -118,28 +118,46 @@ document.querySelectorAll(".tabbar button").forEach((b) => (b.onclick = () => {
 
 // ---------- Cave ----------
 let activeCat = "Toutes";
+let activeStore = "all"; // all | frais | carton
+
+const REGIONS = [
+  "Alsace", "Beaujolais", "Bordeaux", "Bourgogne", "Champagne", "Corse", "Jura", "Languedoc", "Loire",
+  "Provence", "Roussillon", "Savoie", "Sud-Ouest", "Vallée du Rhône", "Cognac", "Armagnac",
+  "Douro", "Espagne", "Italie", "Allemagne", "Écosse", "Irlande", "Japon", "États-Unis", "Caraïbes",
+];
+const NO_REGION = "Région non précisée";
+const regionOf = (w) => (w.region || "").trim() || NO_REGION;
+const bottles = (list) => list.reduce((n, w) => n + (w.quantity || 0), 0);
+
+function chipsHtml(items, active, attr) {
+  return items
+    .map(([key, label, n]) => `<button class="chip ${key === active ? "active" : ""}" data-${attr}="${esc(key)}">${esc(label)}${n ? ` · ${n}` : ""}</button>`)
+    .join("");
+}
 
 function renderCave() {
-  const q = $("#search").value.trim().toLowerCase();
   const showEmpty = $("#show-empty").checked;
-
-  const total = state.wines.reduce((n, w) => n + (w.quantity || 0), 0);
+  const total = bottles(state.wines);
   $("#total-count").textContent = `${total} bouteille${total > 1 ? "s" : ""}`;
 
-  const chips = $("#cat-filter");
-  const counts = {};
-  state.wines.forEach((w) => (counts[w.category] = (counts[w.category] || 0) + (w.quantity || 0)));
-  chips.innerHTML = ["Toutes", ...state.categories.map((c) => c.name)]
-    .map((n) => `<button class="chip ${n === activeCat ? "active" : ""}" data-cat="${esc(n)}">${esc(n)}${n !== "Toutes" && counts[n] ? ` · ${counts[n]}` : ""}</button>`)
-    .join("");
-  chips.querySelectorAll(".chip").forEach((c) => (c.onclick = () => { activeCat = c.dataset.cat; renderCave(); }));
+  const byCat = (c) => bottles(state.wines.filter((w) => w.category === c));
+  $("#cat-filter").innerHTML = chipsHtml(
+    [["Toutes", "Toutes", 0], ...state.categories.map((c) => [c.name, c.name, byCat(c.name)])], activeCat, "cat");
+  $("#cat-filter").querySelectorAll(".chip").forEach((c) => (c.onclick = () => { activeCat = c.dataset.cat; renderCave(); }));
 
-  const list = state.wines.filter((w) => {
+  const inCat = state.wines.filter((w) => activeCat === "Toutes" || w.category === activeCat);
+  $("#store-filter").innerHTML = chipsHtml([
+    ["all", "Tout", 0],
+    ["frais", "Au frais", bottles(inCat.filter((w) => w.auFrais))],
+    ["carton", "En carton", bottles(inCat.filter((w) => !w.auFrais))],
+  ], activeStore, "store");
+  $("#store-filter").querySelectorAll(".chip").forEach((c) => (c.onclick = () => { activeStore = c.dataset.store; renderCave(); }));
+
+  const list = inCat.filter((w) => {
     if (!showEmpty && !w.quantity) return false;
-    if (activeCat !== "Toutes" && w.category !== activeCat) return false;
-    if (!q) return true;
-    return [w.cuvee, w.domaine, w.appellation, w.cepages, w.millesime, w.commentaire, w.category]
-      .join(" ").toLowerCase().includes(q);
+    if (activeStore === "frais" && !w.auFrais) return false;
+    if (activeStore === "carton" && w.auFrais) return false;
+    return true;
   });
 
   const el = $("#cave-list");
@@ -150,19 +168,28 @@ function renderCave() {
     return;
   }
 
+  // Tri par couleur (catégorie), puis par région, puis par nom.
   const order = state.categories.map((c) => c.name);
   const groups = {};
   list.forEach((w) => (groups[w.category] ??= []).push(w));
+  const byRegion = (a, b) => (a === NO_REGION) - (b === NO_REGION) || a.localeCompare(b, "fr");
   el.innerHTML = Object.keys(groups)
     .sort((a, b) => order.indexOf(a) - order.indexOf(b))
     .map((cat) => {
-      const items = groups[cat].sort((a, b) => wineTitle(a).localeCompare(wineTitle(b), "fr"));
-      const n = items.reduce((s, w) => s + (w.quantity || 0), 0);
-      return `<div class="cat-group"><h3><span><span class="dot" style="background:${esc(catOf(cat)?.color || "#999")}"></span>${esc(cat)}</span><span>${n}</span></h3>${items.map(cardHtml).join("")}</div>`;
+      const regions = {};
+      groups[cat].forEach((w) => (regions[regionOf(w)] ??= []).push(w));
+      const body = Object.keys(regions).sort(byRegion).map((r) => {
+        const items = regions[r].sort((a, b) => wineTitle(a).localeCompare(wineTitle(b), "fr"));
+        return `<h4 class="region"><span>${esc(r)}</span><span>${bottles(items)}</span></h4>${items.map(cardHtml).join("")}`;
+      }).join("");
+      return `<div class="cat-group"><h3><span><span class="dot" style="background:${esc(catOf(cat)?.color || "#999")}"></span>${esc(cat)}</span><span>${bottles(groups[cat])}</span></h3>${body}</div>`;
     })
     .join("");
   bindCards(el);
 }
+
+const ICON_SNOW = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M4.9 7l14.2 10M4.9 17 19.1 7M9 4l3 2 3-2M9 20l3-2 3 2"/></svg>';
+const ICON_BOX = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5Z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg>';
 
 function cardHtml(w) {
   const m = maturity(w);
@@ -173,6 +200,7 @@ function cardHtml(w) {
       <div class="title">${esc(wineTitle(w))}</div>
       ${sub ? `<div class="sub">${esc(sub)}</div>` : ""}
       <span class="badge ${m.cls}">${esc(m.label)}</span>
+      <button class="store-pill ${w.auFrais ? "frais" : ""}" data-store-toggle title="Changer le rangement">${w.auFrais ? ICON_SNOW + "Au frais" : ICON_BOX + "En carton"}</button>
       ${w.commentaire ? `<div class="comment">${esc(w.commentaire)}</div>` : ""}
     </div>
     <div class="qty">
@@ -186,7 +214,16 @@ function cardHtml(w) {
 function bindCards(root) {
   root.querySelectorAll(".card").forEach((card) => {
     const w = state.wines.find((x) => x.id === card.dataset.id);
-    card.querySelector("[data-edit]").onclick = () => editWine(w.id);
+    card.querySelector("[data-edit]").onclick = (e) => {
+      if (e.target.closest("[data-store-toggle]")) return;
+      editWine(w.id);
+    };
+    card.querySelector("[data-store-toggle]").onclick = () => {
+      w.auFrais = !w.auFrais;
+      save();
+      render();
+      toast(`${wineTitle(w)} : ${w.auFrais ? "au frais" : "en carton"}`);
+    };
     card.querySelector(".plus").onclick = () => changeQty(w, +1);
     card.querySelector(".minus").onclick = () => {
       changeQty(w, -1);
@@ -204,7 +241,6 @@ function changeQty(w, delta, undo = false) {
   render();
 }
 
-$("#search").oninput = renderCave;
 $("#show-empty").onchange = renderCave;
 
 // ---------- Formulaire ----------
@@ -228,6 +264,9 @@ function resetForm() {
   form.reset();
   form.id.value = "";
   fillCategorySelect(activeCat !== "Toutes" ? activeCat : "Rouge");
+  const used = state.wines.map((w) => (w.region || "").trim()).filter(Boolean);
+  $("#region-list").innerHTML = [...new Set([...used, ...REGIONS])]
+    .sort((a, b) => a.localeCompare(b, "fr")).map((r) => `<option value="${esc(r)}">`).join("");
   setQty(6);
   pendingPhoto = null;
   $("#photo-preview").hidden = true;
@@ -245,9 +284,10 @@ function editWine(id) {
   resetForm();
   form.id.value = w.id;
   fillCategorySelect(w.category);
-  for (const k of ["cuvee", "domaine", "appellation", "cepages", "millesime", "boireDe", "boireJusqua", "commentaire"]) {
+  for (const k of ["cuvee", "domaine", "region", "appellation", "cepages", "millesime", "boireDe", "boireJusqua", "commentaire"]) {
     form[k].value = w[k] ?? "";
   }
+  form.auFrais.checked = Boolean(w.auFrais);
   setQty(w.quantity || 0);
   $("#qty-label").firstChild.textContent = "Bouteilles en cave";
   if (w.photo) { $("#photo-preview").src = w.photo; $("#photo-preview").hidden = false; }
@@ -263,7 +303,9 @@ function readForm() {
     category: form.category.value,
     cuvee: form.cuvee.value.trim(),
     domaine: form.domaine.value.trim(),
+    region: form.region.value.trim(),
     appellation: form.appellation.value.trim(),
+    auFrais: form.auFrais.checked,
     cepages: form.cepages.value.trim(),
     millesime: num(form.millesime.value),
     boireDe: num(form.boireDe.value),
@@ -363,7 +405,7 @@ async function onLabelPhoto(e) {
       state.categories.map((c) => c.name),
     );
     if (result.category && catOf(result.category)) fillCategorySelect(result.category);
-    for (const k of ["cuvee", "domaine", "appellation", "cepages", "millesime", "boireDe", "boireJusqua"]) {
+    for (const k of ["cuvee", "domaine", "region", "appellation", "cepages", "millesime", "boireDe", "boireJusqua"]) {
       if (result[k] != null && result[k] !== "") form[k].value = result[k];
     }
     status.textContent = "Fiche pré-remplie — vérifiez, choisissez le nombre de bouteilles puis enregistrez.";

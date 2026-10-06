@@ -48,10 +48,8 @@
   <main>
     <!-- CAVE -->
     <section id="view-cave" class="view active">
-      <div class="toolbar">
-        <input id="search" type="search" placeholder="Rechercher (cuvée, domaine, cépage…)">
-      </div>
       <div id="cat-filter" class="chips"></div>
+      <div id="store-filter" class="chips"></div>
       <label class="toggle"><input type="checkbox" id="show-empty"> Afficher les bouteilles épuisées</label>
       <div id="cave-list"></div>
     </section>
@@ -81,7 +79,11 @@
         <label>Nom du domaine
           <input name="domaine" placeholder="ex : Domaine William Fèvre">
         </label>
-        <label>Appellation / région <span class="muted">(facultatif)</span>
+        <label>Région
+          <input name="region" list="region-list" placeholder="ex : Bourgogne">
+          <datalist id="region-list"></datalist>
+        </label>
+        <label>Appellation <span class="muted">(facultatif)</span>
           <input name="appellation" placeholder="ex : Chablis Grand Cru">
         </label>
         <label>Cépages
@@ -114,6 +116,12 @@
             <button type="button" data-qty="12">12</button>
             <input name="quantity" type="number" inputmode="numeric" min="0" value="6" required>
           </div>
+        </label>
+
+        <label class="switch">
+          <input type="checkbox" name="auFrais">
+          <span class="switch-track" aria-hidden="true"></span>
+          <span>Au frais <span class="muted small">(rangée en cave à vin — décoché : en carton)</span></span>
         </label>
 
         <label>Commentaire

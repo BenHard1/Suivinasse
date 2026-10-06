@@ -152,7 +152,8 @@ const FICHE_FIELDS = `{
   "category": une des catégories proposées (ou "" si aucune ne convient),
   "cuvee": nom de la cuvée (string, "" si absent),
   "domaine": nom du domaine / château / producteur (string),
-  "appellation": appellation ou région (string),
+  "region": grande région viticole ou d'origine (ex : Bourgogne, Bordeaux, Vallée du Rhône, Loire, Champagne, Douro, Écosse) (string),
+  "appellation": appellation (string, "" si absente),
   "cepages": cépages, séparés par des virgules (string, déduits de l'appellation si non indiqués),
   "millesime": année de vendanges (nombre) ou null,
   "boireDe": année à partir de laquelle le vin est à boire (nombre) ou null,
@@ -203,6 +204,7 @@ function describe(w) {
     `Catégorie : ${w.category}`,
     w.cuvee && `Cuvée : ${w.cuvee}`,
     w.domaine && `Domaine : ${w.domaine}`,
+    w.region && `Région : ${w.region}`,
     w.appellation && `Appellation : ${w.appellation}`,
     w.cepages && `Cépages : ${w.cepages}`,
     w.millesime && `Millésime : ${w.millesime}`,
@@ -218,6 +220,7 @@ export async function pairWines(ai, meal, cellar, useWeb) {
       (w) =>
         `- [${w.id}] ${describe(w).replace(/\n/g, " | ")} | Quantité : ${w.quantity}` +
         ` | Maturité (${year}) : ${w.maturityLabel}` +
+        ` | Rangement : ${w.auFrais ? "au frais (prête à servir)" : "en carton"}` +
         (w.boireDe || w.boireJusqua ? ` (à boire ${w.boireDe ?? "?"}–${w.boireJusqua ?? "?"})` : "") +
         (w.commentaire ? ` | Commentaire : ${w.commentaire}` : ""),
     )

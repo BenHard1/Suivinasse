@@ -4,8 +4,8 @@ Web app (PWA) installable sur l'écran d'accueil du téléphone pour gérer sa c
 
 ## Fonctionnalités
 
-- **Cave** : bouteilles classées par catégorie (Rouge, Blanc, Rosé, Champagne, Porto, Whiskey, Rhum, Absinthe + catégories personnalisées), recherche, boutons **+ / −** pour ajouter ou retirer une bouteille bue (avec « Annuler »).
-- **Ajouter** : fiche avec cuvée, domaine, appellation, cépages, millésime, fenêtre de dégustation, commentaire, et **nombre de bouteilles rentrées** (1, 3, 6, 12 ou libre). Si la même cuvée/millésime existe déjà, les bouteilles sont ajoutées à la fiche existante.
+- **Cave** : bouteilles classées par couleur/catégorie (Rouge, Blanc, Rosé, Champagne, Porto, Whiskey, Rhum, Absinthe + catégories personnalisées) puis par région, filtre **Au frais / En carton** (rangement modifiable d'un geste sur chaque fiche), boutons **+ / −** pour ajouter ou retirer une bouteille bue (avec « Annuler »).
+- **Ajouter** : fiche avec cuvée, domaine, région, appellation, cépages, millésime, fenêtre de dégustation, rangement « au frais », commentaire, et **nombre de bouteilles rentrées** (1, 3, 6, 12 ou libre). Si la même cuvée/millésime existe déjà, les bouteilles sont ajoutées à la fiche existante.
 - **Reconnaissance photo** : photographiez l'étiquette ou choisissez une photo de la galerie, l'IA (Gemini ou Claude) pré-remplit la fiche et estime la fenêtre de dégustation.
 - **Maturité** : liste des vins à maturité, triés par urgence (apogée dépassée → à boire rapidement → à maturité).
 - **Accords mets & vins** : décrivez le repas, l'IA analyse toutes les fiches et commentaires de votre cave (avec recherche internet si activée) et recommande les bouteilles par ordre de priorité, en privilégiant celles dont la maturité est atteinte.
@@ -40,7 +40,7 @@ Chaque ami crée son compte depuis l'écran de connexion et a sa propre cave. Po
 
 Si la fenêtre « À boire de / jusqu'à » est vide, une estimation par défaut est calculée à partir du millésime :
 Rouge +3 à +12 ans, Blanc +1 à +6, Rosé +0 à +2, Champagne +2 à +10, Porto +5 à +40, autres vins +2 à +8.
-Les spiritueux sont toujours considérés comme prêts. Le bouton **✨ Estimer avec l'IA** donne une estimation plus précise.
+Les spiritueux sont toujours considérés comme prêts. Le bouton **Estimer avec l'IA** donne une estimation plus précise.
 
 ## Moteur IA et clé API
 
