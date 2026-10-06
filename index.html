@@ -37,17 +37,19 @@
   </div>
 
   <header class="topbar">
-    <img class="brand-icon" src="assets/logo-icon-on-dark.jpg" alt="" aria-hidden="true">
+    <img class="brand-icon" src="assets/logo-text-on-dark.jpg" alt="" aria-hidden="true">
     <img class="brand-full" src="assets/logo-on-dark.jpg" alt="Wine in my Cellar">
     <div class="topbar-right">
       <span id="sync-status" class="sync" title=""></span>
-      <span id="total-count" class="pill"></span>
     </div>
   </header>
   <!-- Seule cette zone défile : la page elle-même est figée pour que l'en-tête et la barre du bas
        ne bougent jamais (rebond « élastique » de l'appli installée sur iPhone). -->
   <div id="scroller" class="scroller">
-  <h1 id="view-title" class="view-title">Ma cave</h1>
+  <div class="title-row">
+    <h1 id="view-title" class="view-title">Ma cave</h1>
+    <span id="total-count" class="count-pill"></span>
+  </div>
 
   <main>
     <!-- CAVE -->
@@ -218,11 +220,15 @@
   </div>
 
   <nav class="tabbar">
-    <button data-view="maturity"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/></svg>Maturité</button>
-    <button data-view="pairing"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 2v7a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6a2 2 0 0 0 2 2h3Zm0 0v7"/></svg>Accords</button>
-    <button data-view="cave" class="active"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2h4v4.5c0 .8.4 1.5 1 2 1.3 1 2 2.4 2 4V20a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-7.5c0-1.6.7-3 2-4 .6-.5 1-1.2 1-2Z"/><path d="M7 14h10"/></svg>Cave</button>
-    <button data-view="terroir"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="10" r="2.6"/><circle cx="14.5" cy="10" r="2.6"/><circle cx="6.5" cy="14.8" r="2.6"/><circle cx="12" cy="14.8" r="2.6"/><circle cx="9.3" cy="19.4" r="2.6"/><path d="M12 7.4V5c0-1.3.8-2.4 2-3"/><path d="M14 4.5c1.6-1.4 4-1.6 6-.5-1.3 1.8-3.8 2.4-6 .5Z"/></svg>Terroirs</button>
-    <button data-view="settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></svg>Réglages</button>
+    <button data-view="maturity"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/></svg><span>Maturité</span></button>
+    <button data-view="pairing"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 2v6a2.5 2.5 0 0 0 5 0V2M7.5 2v20"/><ellipse cx="17" cy="6.5" rx="3" ry="4.5"/><path d="M17 11v11"/></svg><span>Accords</span></button>
+    <button data-view="cave" class="cave-tab active" aria-label="Ma cave">
+      <span class="cave-arch" aria-hidden="true"></span>
+      <svg class="cave-bottles" viewBox="0 0 60 44" aria-hidden="true"><path d="M17.8 2H22.2V17.1Q26.2 19.5 26.2 23.8V44H13.8V23.8Q13.8 19.5 17.8 17.1ZM32.2 13H35.8V24.2Q39 25.9 39 29.1V44H29V29.1Q29 25.9 32.2 24.2ZM44.1 20H46.9V28.6Q49.5 30 49.5 32.5V44H41.5V32.5Q41.5 30 44.1 28.6Z"/></svg>
+      <span class="cave-label">Ma cave</span>
+    </button>
+    <button data-view="terroir"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="10" r="2.6"/><circle cx="14.5" cy="10" r="2.6"/><circle cx="6.5" cy="14.8" r="2.6"/><circle cx="12" cy="14.8" r="2.6"/><circle cx="9.3" cy="19.4" r="2.6"/><path d="M12 7.4V5c0-1.3.8-2.4 2-3"/><path d="M14 4.5c1.6-1.4 4-1.6 6-.5-1.3 1.8-3.8 2.4-6 .5Z"/></svg><span>Terroirs</span></button>
+    <button data-view="settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></svg><span>Réglages</span></button>
   </nav>
 
   <div id="toast" class="toast" hidden></div>

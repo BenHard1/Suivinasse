@@ -7,6 +7,7 @@
   --primary: #63001f;
   --primary-text: #f8f1e7;
   --brand: #63001f;
+  --terra: #b3582b;
   --wine: #7a0a2c;
   --accent: #b3582b;
   --danger: #b3261e;
@@ -49,40 +50,34 @@ body {
 .scroller {
   position: fixed; inset: 0; bottom: calc(-1 * var(--ios-gap)); overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;
   padding-top: calc(var(--head-h) + env(safe-area-inset-top));
-  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  padding-bottom: calc(110px + env(safe-area-inset-bottom));
 }
 
-/* En-tête fixe. En haut de page : logo complet centré. Au défilement, l'en-tête se réduit et le logo
-   glisse vers la gauche en rétrécissant : son arche se superpose exactement à l'icône seule, qui prend
-   le relais (fondu enchaîné). Les valeurs de transformation alignent l'arche des deux images. */
+/* En-tête fixe (maquette). En haut de page : logo complet centré. Au défilement, l'en-tête se réduit
+   et le logo glisse à gauche en rétrécissant : son texte se superpose exactement au logo texte seul,
+   qui prend le relais en fondu. Les transformations alignent le texte des deux images. */
 :root {
-  --full-h: 78px;            /* hauteur du logo complet (largeur = 1,9313 × hauteur) */
-  --head-h: 94px;
-  --full-tx: calc(86.9px - 50vw); --full-ty: -9.2px; --full-s: .584;
-  --icon-tx: calc(50vw - 86.7px); --icon-ty: 12.8px; --icon-s: 1.712;
-}
-@media (max-width: 360px) {
-  :root {
-    --full-h: 64px; --head-h: 80px;
-    --full-tx: calc(73.4px - 50vw); --full-ty: -9.2px; --full-s: .712;
-    --icon-tx: calc(50vw - 73.3px); --icon-ty: 11.2px; --icon-s: 1.405;
-  }
+  --full-h: 60px;            /* hauteur du logo complet (largeur = 1,9303 × hauteur) */
+  --head-h: 104px;
+  --head-compact: 62px;
+  --full-tx: calc(50.3px - 50vw); --full-ty: -8.3px; --full-s: .596;
+  --icon-tx: calc(50vw - 34.4px); --icon-ty: 8.5px; --icon-s: 1.677;
 }
 .topbar {
   position: fixed; top: 0; left: 0; right: 0; z-index: 5;
   height: calc(var(--head-h) + env(safe-area-inset-top));
   display: flex; align-items: center; justify-content: flex-end;
-  padding: env(safe-area-inset-top) 12px 0;
+  padding: env(safe-area-inset-top) 14px 0;
   background: var(--brand); color: #f8f1e7;
   transition: height .35s ease, box-shadow .35s ease;
 }
 .brand-full, .brand-icon { position: absolute; display: block; width: auto; transform-origin: 0 0; transition: transform .35s ease, opacity .3s ease; }
-.brand-full { height: var(--full-h); top: calc(env(safe-area-inset-top) + 8px); left: calc(50% - var(--full-h) * .96565); }
+.brand-full { height: var(--full-h); top: calc(env(safe-area-inset-top) + (var(--head-h) - var(--full-h)) / 2); left: calc(50% - var(--full-h) * .96515); }
 .brand-icon {
-  height: 40px; top: calc(env(safe-area-inset-top) + 4px); left: 12px; opacity: 0;
+  height: 34px; top: calc(env(safe-area-inset-top) + 14px); left: 16px; opacity: 0;
   transform: translate(var(--icon-tx), var(--icon-ty)) scale(var(--icon-s));
 }
-.topbar.compact { height: calc(48px + env(safe-area-inset-top)); box-shadow: 0 2px 10px rgba(0, 0, 0, .25); }
+.topbar.compact { height: calc(var(--head-compact) + env(safe-area-inset-top)); box-shadow: 0 2px 10px rgba(0, 0, 0, .25); }
 .topbar.compact .brand-full { opacity: 0; transform: translate(var(--full-tx), var(--full-ty)) scale(var(--full-s)); }
 .topbar.compact .brand-icon { opacity: 1; transform: none; }
 .topbar-right { position: relative; display: flex; align-items: center; gap: 6px; }
@@ -95,6 +90,17 @@ body {
 
 .ico { width: 1.15em; height: 1.15em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 
+.title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; max-width: 720px; margin: 14px auto 0; padding: 0 16px; }
+.title-row .view-title { margin: 0; padding: 0; }
+.count-pill {
+  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; flex: none;
+  border: 1px solid var(--border); background: var(--surface); color: var(--primary);
+  border-radius: 999px; padding: 3px 10px 3px 8px; font-size: .85rem; font-weight: 700;
+}
+.count-pill .ico { width: 15px; height: 15px; }
+.count-pill:empty { display: none; }
+/* L'état de synchronisation ne s'affiche que s'il y a quelque chose à signaler. */
+.sync[data-state="ok"] { display: none; }
 .view-title {
   font-family: Georgia, "Times New Roman", serif; font-weight: 600; font-size: 1.45rem;
   color: var(--primary); max-width: 720px; margin: 14px auto 0; padding: 0 16px;
@@ -241,50 +247,48 @@ legend { font-weight: 600; padding: 0 4px; }
 
 .empty-state { text-align: center; color: var(--muted); padding: 40px 10px; }
 
+/* Barre du bas (maquette) : fond bordeaux, libellés crème en majuscules.
+   « Ma cave » au centre dans un dôme : arche terracotta et bouteilles ; quand l'onglet est actif,
+   l'arche descend jusqu'en bas de l'écran. Les autres onglets actifs reçoivent une arche terracotta
+   bordée de bordeaux qui monte depuis le bas. */
 .tabbar {
   position: fixed; bottom: calc(-1 * var(--ios-gap)); left: 0; right: 0; z-index: 10;
-  display: flex; background: var(--surface); border-top: 1px solid var(--border);
+  display: flex; align-items: stretch; height: calc(58px + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
+  background: var(--brand);
 }
 .tabbar button {
-  position: relative; flex: 1; min-width: 0; background: none; border: none; color: var(--muted);
-  font: inherit; font-size: .72rem; padding: 8px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  position: relative; flex: 1; min-width: 0; background: none; border: none; color: #f8f1e7;
+  font: inherit; font-size: .62rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px 0 4px;
 }
-.tabbar button > * { position: relative; z-index: 1; }
-.tabbar .ico {
-  width: 24px; height: 24px; stroke-width: 1.6; box-sizing: content-box; border-radius: 50%;
-  transition: transform .25s ease, background-color .25s ease, color .25s ease, padding .25s ease;
+.tabbar button > * { position: relative; z-index: 2; }
+.tabbar .ico { width: 24px; height: 24px; stroke-width: 1.6; }
+.tabbar button:not(.cave-tab)::before {
+  content: ""; position: absolute; z-index: 1; left: 50%; width: 54px; margin-left: -27px;
+  top: -8px; bottom: calc(-1 * env(safe-area-inset-bottom));
+  border-radius: 27px 27px 0 0; background: var(--terra); box-shadow: 0 0 0 4px var(--brand);
+  transform: scaleY(0); transform-origin: bottom; transition: transform .3s ease;
 }
-/* « Ma cave » est toujours surélevé dans une bulle, avec la barre qui forme une bosse autour.
-   L'onglet choisi reçoit un halo : un arc de la couleur de la barre au-dessus de son icône. */
-.tabbar button[data-view="cave"]::before {
-  content: ""; position: absolute; z-index: 0; top: -20px; left: 50%; width: 64px; height: 64px; margin-left: -32px;
-  border-radius: 50%; background: var(--surface); border: 1px solid var(--border);
-  clip-path: inset(0 0 calc(100% - 21px) 0); /* seul l'arc au-dessus de la barre est visible */
+.tabbar button.active:not(.cave-tab)::before { transform: none; }
+
+.tabbar .cave-tab { flex: 0 0 108px; justify-content: flex-end; padding-bottom: 9px; font-size: .95rem; letter-spacing: .02em; }
+.cave-tab::before {
+  content: ""; position: absolute; z-index: 0; left: 50%; top: -50px; width: 104px; height: 104px; margin-left: -52px;
+  border-radius: 50%; background: var(--brand);
 }
-.tabbar button[data-view="cave"] .ico {
-  padding: 10px; margin: -10px 0 -10px; transform: translateY(-18px);
-  background: var(--primary); color: var(--primary-text); stroke-width: 1.8;
-  box-shadow: 0 4px 10px rgba(99, 0, 31, .3);
+.tabbar .cave-arch {
+  position: absolute; z-index: 1; left: 50%; width: 80px; margin-left: -40px; top: -40px; bottom: calc(100% - 16px);
+  border-radius: 40px 40px 0 0; background: var(--terra); transition: bottom .35s ease;
 }
-.tabbar button::after {
-  content: ""; position: absolute; z-index: 0; top: -14px; left: 50%; width: 56px; height: 56px; margin-left: -28px;
-  border-radius: 50%; background: var(--surface); border: 1px solid var(--border);
-  clip-path: inset(0 0 calc(100% - 15px) 0); /* halo : arc de la couleur de la barre */
-  opacity: 0; transform: translateY(10px); transition: opacity .25s ease, transform .25s ease;
-}
-.tabbar button.active::after { opacity: 1; transform: none; }
-.tabbar button.active { color: var(--primary); font-weight: 700; }
-.tabbar button.active:not([data-view="cave"]) .ico { transform: translateY(-6px); stroke-width: 1.9; }
-/* Halo autour de la bulle quand « Ma cave » est l'onglet actif. */
-.tabbar button[data-view="cave"]::after { display: none; } /* son halo est l'anneau autour de la bulle */
-.tabbar button[data-view="cave"].active .ico { box-shadow: 0 0 0 5px var(--surface), 0 0 0 6px var(--border), 0 6px 14px rgba(99, 0, 31, .3); }
+.tabbar .cave-tab.active .cave-arch { bottom: calc(-1 * env(safe-area-inset-bottom)); }
+.tabbar .cave-bottles { position: absolute; left: 50%; top: -31px; width: 56px; height: 42px; margin-left: -28px; fill: var(--brand); }
 @media (prefers-reduced-motion: reduce) {
-  .tabbar .ico, .tabbar button::before, .tabbar button::after { transition: none; }
+  .tabbar button::before, .tabbar .cave-arch { transition: none; }
 }
 
 .toast {
-  position: fixed; left: 16px; right: 16px; bottom: calc(84px + env(safe-area-inset-bottom) - var(--ios-gap));
+  position: fixed; left: 16px; right: 16px; bottom: calc(76px + env(safe-area-inset-bottom) - var(--ios-gap));
   background: var(--text); color: var(--bg); padding: 12px 16px; border-radius: 12px;
   text-align: center; z-index: 20; display: flex; justify-content: center; gap: 14px; align-items: center;
 }
@@ -319,7 +323,7 @@ legend { font-weight: 600; padding: 0 4px; }
 .switch input:focus-visible + .switch-track { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .fab {
-  position: fixed; z-index: 9; right: 16px; bottom: calc(88px + env(safe-area-inset-bottom) - var(--ios-gap));
+  position: fixed; z-index: 9; right: 16px; bottom: calc(76px + env(safe-area-inset-bottom) - var(--ios-gap));
   width: 56px; height: 56px; border-radius: 50%; border: none; display: grid; place-items: center;
   background: var(--primary); color: var(--primary-text); box-shadow: 0 6px 16px rgba(99, 0, 31, .35);
 }

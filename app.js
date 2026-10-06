@@ -153,6 +153,7 @@ function show(view) {
   // La fiche d'ajout / modification dépend de la cave : l'onglet Cave reste mis en avant.
   const tab = view === "add" ? "cave" : view;
   document.querySelectorAll(".tabbar button").forEach((b) => b.classList.toggle("active", b.dataset.view === tab));
+  $("#total-count").hidden = tab !== "cave";
   $("#view-title").textContent = view === "add" && $("#wine-form").id.value ? "Modifier la fiche" : TITLES[view];
   if (view === "add" && !$("#wine-form").id.value) resetForm();
   render();
