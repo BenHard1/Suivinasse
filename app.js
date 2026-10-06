@@ -123,8 +123,9 @@ function wineLoader(text) {
 // En-tête réduit (icône seule) dès que l'on fait défiler la page.
 const topbar = document.querySelector(".topbar");
 let compact = false;
-window.addEventListener("scroll", () => {
-  const y = window.scrollY;
+const scroller = document.getElementById("scroller");
+scroller.addEventListener("scroll", () => {
+  const y = scroller.scrollTop;
   // Seuils différents à l'aller et au retour pour éviter le clignotement.
   if (!compact && y > 40) topbar.classList.add("compact"), (compact = true);
   else if (compact && y < 8) topbar.classList.remove("compact"), (compact = false);
@@ -140,7 +141,7 @@ function show(view) {
   $("#view-title").textContent = view === "add" && $("#wine-form").id.value ? "Modifier la fiche" : TITLES[view];
   if (view === "add" && !$("#wine-form").id.value) resetForm();
   render();
-  window.scrollTo(0, 0);
+  scroller.scrollTo(0, 0);
 }
 document.querySelectorAll(".tabbar button").forEach((b) => (b.onclick = () => show(b.dataset.view)));
 $("#fab-add").onclick = () => {

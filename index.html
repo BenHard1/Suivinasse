@@ -44,6 +44,9 @@
       <span id="total-count" class="pill"></span>
     </div>
   </header>
+  <!-- Seule cette zone défile : la page elle-même est figée pour que l'en-tête et la barre du bas
+       ne bougent jamais (rebond « élastique » de l'appli installée sur iPhone). -->
+  <div id="scroller" class="scroller">
   <h1 id="view-title" class="view-title">Ma cave</h1>
 
   <main>
@@ -212,6 +215,7 @@
       <p class="muted small credit">Fond de carte : <a href="https://github.com/VictorCazanave/svg-maps" target="_blank" rel="noopener">svg-maps</a> © Victor Cazanave, <a href="https://creativecommons.org/licenses/by/4.0/deed.fr" target="_blank" rel="noopener">CC BY 4.0</a> (simplifié, régions viticoles ajoutées).</p>
     </section>
   </main>
+  </div>
 
   <nav class="tabbar">
     <button data-view="maturity"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/></svg>Maturité</button>
