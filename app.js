@@ -120,6 +120,21 @@ function wineLoader(text) {
   </div>`;
 }
 
+// iPhone, appli installée (barre d'état transparente) : iOS annonce une zone d'affichage plus courte
+// que l'écran (de la hauteur de la barre d'état), et tout ce qui est « collé en bas » flotte au-dessus
+// du bas réel. On mesure cet écart et on le compense (variable CSS --ios-gap).
+function fixIosStandaloneGap() {
+  if (navigator.standalone !== true) return; // propriété propre à iOS, vraie uniquement hors navigateur
+  const portrait = window.innerHeight > window.innerWidth;
+  const full = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+  const gap = full - window.innerHeight;
+  // Un grand écart signifie que le clavier est ouvert : on ne touche à rien.
+  document.documentElement.style.setProperty("--ios-gap", gap > 0 && gap < 80 ? `${gap}px` : "0px");
+}
+fixIosStandaloneGap();
+window.addEventListener("resize", fixIosStandaloneGap);
+window.addEventListener("orientationchange", () => setTimeout(fixIosStandaloneGap, 300));
+
 // En-tête réduit (icône seule) dès que l'on fait défiler la page.
 const topbar = document.querySelector(".topbar");
 let compact = false;
