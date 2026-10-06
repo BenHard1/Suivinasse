@@ -59,7 +59,7 @@
     <!-- AJOUT / EDITION -->
     <section id="view-add" class="view">
       <div class="photo-box">
-        <label class="btn btn-secondary btn-block" for="photo-input">📷 Remplir depuis une photo d'étiquette</label>
+        <label class="btn btn-secondary btn-block" for="photo-input"><svg class="ico ico-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3Z"/><circle cx="12" cy="13" r="3"/></svg>Remplir depuis une photo d'étiquette</label>
         <input id="photo-input" type="file" accept="image/*" capture="environment" hidden>
         <p id="photo-status" class="muted small"></p>
         <img id="photo-preview" alt="" hidden>
@@ -96,7 +96,7 @@
               <input name="boireJusqua" type="number" inputmode="numeric" min="1800" max="2200">
             </label>
           </div>
-          <button type="button" id="btn-estimate" class="btn btn-ghost btn-small">✨ Estimer avec l'IA</button>
+          <button type="button" id="btn-estimate" class="btn btn-ghost btn-small"><svg class="ico ico-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/><path d="M19 15v4M17 17h4"/></svg><span>Estimer avec l'IA</span></button>
           <p class="muted small">Laisser vide : une estimation par défaut selon la catégorie est utilisée.</p>
         </fieldset>
 
@@ -134,7 +134,7 @@
         <textarea id="meal" rows="3" placeholder="ex : Gigot d'agneau aux herbes, gratin dauphinois, plateau de fromages"></textarea>
       </label>
       <label class="toggle"><input type="checkbox" id="use-web" checked> Autoriser la recherche internet</label>
-      <button id="btn-pair" class="btn btn-primary btn-block">🍷 Trouver l'accord parfait dans ma cave</button>
+      <button id="btn-pair" class="btn btn-primary btn-block"><svg class="ico ico-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 22h8M12 15v7"/><path d="M12 15a5 5 0 0 0 5-5c0-2-.5-4-2-8H9c-1.5 4-2 6-2 8a5 5 0 0 0 5 5Z"/><path d="M7 10h10"/></svg>Trouver l'accord parfait dans ma cave</button>
       <div id="pairing-result" class="result"></div>
     </section>
 
@@ -151,7 +151,7 @@
       </div>
 
       <h2>Intelligence artificielle</h2>
-      <p class="muted small">Pour la reconnaissance photo et les accords mets‑vins. La clé reste stockée uniquement sur ce téléphone.</p>
+      <p class="muted small">Pour la reconnaissance photo et les accords mets‑vins. <span id="ai-key-where"></span></p>
       <label>Moteur IA
         <select id="ai-provider">
           <option value="gemini">Google Gemini — gratuit</option>
@@ -176,18 +176,18 @@
 
       <h2>Sauvegarde</h2>
       <p class="muted small">Les données sont stockées dans ce navigateur. Exportez régulièrement une sauvegarde.</p>
-      <button id="btn-export" class="btn btn-secondary btn-block">⬇️ Exporter (JSON)</button>
-      <label class="btn btn-secondary btn-block" for="import-file">⬆️ Importer une sauvegarde</label>
+      <button id="btn-export" class="btn btn-secondary btn-block"><svg class="ico ico-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>Exporter (JSON)</button>
+      <label class="btn btn-secondary btn-block" for="import-file"><svg class="ico ico-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg>Importer une sauvegarde</label>
       <input id="import-file" type="file" accept="application/json,.json" hidden>
     </section>
   </main>
 
   <nav class="tabbar">
-    <button data-view="cave" class="active"><span>🍾</span>Cave</button>
-    <button data-view="add"><span>➕</span>Ajouter</button>
-    <button data-view="maturity"><span>⏳</span>Maturité</button>
-    <button data-view="pairing"><span>🍽️</span>Accords</button>
-    <button data-view="settings"><span>⚙️</span>Réglages</button>
+    <button data-view="cave" class="active"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2h4v4.5c0 .8.4 1.5 1 2 1.3 1 2 2.4 2 4V20a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-7.5c0-1.6.7-3 2-4 .6-.5 1-1.2 1-2Z"/><path d="M7 14h10"/></svg>Cave</button>
+    <button data-view="add"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>Ajouter</button>
+    <button data-view="maturity"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/></svg>Maturité</button>
+    <button data-view="pairing"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 2v7a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6a2 2 0 0 0 2 2h3Zm0 0v7"/></svg>Accords</button>
+    <button data-view="settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></svg>Réglages</button>
   </nav>
 
   <div id="toast" class="toast" hidden></div>

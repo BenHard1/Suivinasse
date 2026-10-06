@@ -110,6 +110,20 @@ export async function signOut() {
   dirty = false;
 }
 
+// ---------- Réglages IA du compte ----------
+// Stockés dans les métadonnées du compte (lisibles uniquement par l'utilisateur connecté),
+// jamais dans la cave : ils ne partent donc pas dans les exports.
+export function accountAi() {
+  return user?.user_metadata?.ai ?? null;
+}
+
+export async function saveAccountAi(ai) {
+  const c = await client();
+  const { data, error } = await c.auth.updateUser({ data: { ai } });
+  if (error) throw new Error(authError(error));
+  user = data.user;
+}
+
 // ---------- Données ----------
 export function hasLegacyData() {
   return Boolean(readCache(LEGACY_KEY)?.wines.length);

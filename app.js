@@ -29,10 +29,27 @@ const DEFAULT_WINDOWS = {
 const defaultState = () => ({ wines: [], categories: structuredClone(DEFAULT_CATEGORIES) });
 let state = defaultState();
 const save = () => store.save(state);
-const keyFor = (p) => localStorage.getItem(KEY_STORE[p]) || "";
-// Gemini par défaut, sauf si une clé Claude est déjà enregistrée sur ce téléphone.
-const provider = () => localStorage.getItem(PROVIDER_KEY) || (keyFor("claude") ? "claude" : "gemini");
+// Réglages IA : dans le compte si connecté, sinon sur ce téléphone.
+function localAi() {
+  return {
+    provider: localStorage.getItem(PROVIDER_KEY) || "",
+    keys: { gemini: localStorage.getItem(KEY_STORE.gemini) || "", claude: localStorage.getItem(KEY_STORE.claude) || "" },
+  };
+}
+function aiSettings() {
+  const s = store.currentUser() ? store.accountAi() : localAi();
+  return { provider: s?.provider || "", keys: { gemini: "", claude: "", ...s?.keys } };
+}
+const keyFor = (p) => aiSettings().keys[p] || "";
+// Gemini par défaut, sauf si seule une clé Claude est enregistrée.
+const provider = () => aiSettings().provider || (keyFor("claude") && !keyFor("gemini") ? "claude" : "gemini");
 const aiConfig = () => ({ provider: provider(), key: keyFor(provider()) });
+
+async function saveAi(ai) {
+  if (store.currentUser()) return store.saveAccountAi(ai);
+  localStorage.setItem(PROVIDER_KEY, ai.provider);
+  for (const p of Object.keys(KEY_STORE)) localStorage.setItem(KEY_STORE[p], ai.keys[p] || "");
+}
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const catOf = (name) => state.categories.find((c) => c.name === name);
@@ -129,7 +146,7 @@ function renderCave() {
   if (!list.length) {
     el.innerHTML = state.wines.length
       ? `<p class="empty-state">Aucune bouteille ne correspond.</p>`
-      : `<p class="empty-state">Votre cave est vide.<br>Touchez <b>➕ Ajouter</b> pour rentrer vos premières bouteilles.</p>`;
+      : `<p class="empty-state">Votre cave est vide.<br>Touchez <b>Ajouter</b> pour rentrer vos premières bouteilles.</p>`;
     return;
   }
 
@@ -348,9 +365,9 @@ $("#photo-input").onchange = async (e) => {
     for (const k of ["cuvee", "domaine", "appellation", "cepages", "millesime", "boireDe", "boireJusqua"]) {
       if (result[k] != null && result[k] !== "") form[k].value = result[k];
     }
-    status.textContent = "✅ Fiche pré-remplie — vérifiez, choisissez le nombre de bouteilles puis enregistrez.";
+    status.textContent = "Fiche pré-remplie — vérifiez, choisissez le nombre de bouteilles puis enregistrez.";
   } catch (err) {
-    status.textContent = `⚠️ ${err.message}`;
+    status.textContent = err.message;
   }
 };
 
@@ -359,7 +376,7 @@ $("#btn-estimate").onclick = async (e) => {
   const data = readForm();
   if (!data.cuvee && !data.domaine && !data.appellation) return toast("Renseignez d'abord la cuvée ou le domaine.");
   btn.disabled = true;
-  btn.textContent = "Estimation…";
+  btn.querySelector("span").textContent = "Estimation…";
   try {
     const r = await estimateWindow(aiConfig(), data);
     if (r.boireDe) form.boireDe.value = r.boireDe;
@@ -369,7 +386,7 @@ $("#btn-estimate").onclick = async (e) => {
     toast(err.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = "✨ Estimer avec l'IA";
+    btn.querySelector("span").textContent = "Estimer avec l'IA";
   }
 };
 
@@ -406,7 +423,7 @@ $("#btn-pair").onclick = async () => {
     const md = await pairWines(aiConfig(), meal, cellar, $("#use-web").checked);
     out.innerHTML = `<div class="md">${markdown(md)}</div>`;
   } catch (err) {
-    out.innerHTML = `<p class="b-past badge">⚠️ ${esc(err.message)}</p>`;
+    out.innerHTML = `<p class="b-past badge">${esc(err.message)}</p>`;
   } finally {
     btn.disabled = false;
   }
@@ -441,6 +458,9 @@ function renderSettings() {
   $("#account-box").hidden = !user;
   $("#local-box").hidden = Boolean(user);
   if (user) $("#account-email").textContent = `Connecté : ${user.email}`;
+  $("#ai-key-where").textContent = user
+    ? "La clé est enregistrée dans votre compte : vous la retrouvez sur tous vos appareils."
+    : "La clé reste stockée uniquement sur ce téléphone.";
   $("#ai-provider").value = provider();
   showProviderKey(provider());
   $("#cat-list").innerHTML = state.categories
@@ -464,16 +484,24 @@ function showProviderKey(p) {
   $("#key-help-claude").hidden = p !== "claude";
 }
 
-$("#ai-provider").onchange = (e) => {
-  localStorage.setItem(PROVIDER_KEY, e.target.value);
+$("#ai-provider").onchange = async (e) => {
   showProviderKey(e.target.value);
+  try { await saveAi({ ...aiSettings(), provider: e.target.value }); } catch (err) { toast(err.message); }
 };
 
-$("#btn-save-key").onclick = () => {
+$("#btn-save-key").onclick = async (e) => {
+  const btn = e.currentTarget;
   const p = $("#ai-provider").value;
-  localStorage.setItem(PROVIDER_KEY, p);
-  localStorage.setItem(KEY_STORE[p], $("#api-key").value.trim());
-  toast(`Clé ${PROVIDERS[p].label} enregistrée`);
+  const s = aiSettings();
+  btn.disabled = true;
+  try {
+    await saveAi({ provider: p, keys: { ...s.keys, [p]: $("#api-key").value.trim() } });
+    toast(store.currentUser() ? `Clé ${PROVIDERS[p].label} enregistrée dans votre compte` : `Clé ${PROVIDERS[p].label} enregistrée`);
+  } catch (err) {
+    toast(err.message);
+  } finally {
+    btn.disabled = false;
+  }
 };
 
 $("#btn-add-cat").onclick = () => {
@@ -591,10 +619,19 @@ $("#btn-logout").onclick = async () => {
   $("#auth").hidden = false;
 };
 
-const SYNC_ICONS = { syncing: ["⟳", "Synchronisation…"], ok: ["☁︎", "Synchronisé"], offline: ["⚠︎", "Hors ligne : les modifications seront envoyées plus tard"] };
+const CLOUD = '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>';
+const CLOUD_OFF = '<path d="m2 2 20 20"/><path d="M5.78 5.78A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.31-.19"/><path d="M21.53 16.5A4.5 4.5 0 0 0 17.5 10h-1.79A7 7 0 0 0 10 5.07"/>';
+const SYNC_ICONS = {
+  syncing: [CLOUD, "Synchronisation…"],
+  ok: [CLOUD, "Synchronisé"],
+  offline: [CLOUD_OFF, "Hors ligne : les modifications seront envoyées plus tard"],
+};
 function syncStatus(s) {
   const el = $("#sync-status");
-  [el.textContent, el.title] = SYNC_ICONS[s] || ["", ""];
+  const [icon, title] = SYNC_ICONS[s] || ["", ""];
+  el.innerHTML = icon && `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${icon}</svg>`;
+  el.title = title;
+  el.dataset.state = s;
 }
 
 async function enterApp() {
@@ -605,6 +642,14 @@ async function enterApp() {
       confirm("Des bouteilles sont déjà enregistrées sur ce téléphone. Les ajouter à votre compte ?")) {
     state = store.takeLegacyData();
     save();
+  }
+  // Clés IA saisies sur ce téléphone avant les comptes : on les rattache au compte.
+  const local = localAi();
+  if (user && !store.accountAi() && (local.keys.gemini || local.keys.claude)) {
+    try {
+      await store.saveAccountAi(local);
+      [PROVIDER_KEY, ...Object.values(KEY_STORE)].forEach((k) => localStorage.removeItem(k));
+    } catch {}
   }
   $("#auth").hidden = true;
   activeCat = "Toutes";

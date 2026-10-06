@@ -17,7 +17,7 @@ Web app (PWA) installable sur l'écran d'accueil du téléphone pour gérer sa c
 |---|---|---|
 | Cave (fiches, quantités, commentaires, miniatures photo, catégories) | Base de données Supabase, une ligne par compte, protégée par des règles RLS (chaque compte ne lit/écrit que sa cave) + copie locale pour le hors-ligne | Navigateur du téléphone uniquement (`localStorage`) |
 | Mot de passe | Géré par Supabase Auth (haché, jamais visible) | — |
-| Clé API (Gemini ou Claude) | Navigateur du téléphone uniquement | idem |
+| Clé API (Gemini ou Claude) | Dans le compte (métadonnées Supabase Auth, lisibles uniquement par l'utilisateur connecté) — retrouvée sur tous ses appareils, jamais incluse dans les exports | Navigateur du téléphone uniquement |
 | Photos d'étiquette | Envoyées au moteur IA choisi le temps de l'analyse ; seule une miniature 160 px est gardée dans la fiche | idem |
 
 Avec un compte, la cave suit l'utilisateur sur tous ses appareils ; hors ligne, les modifications sont gardées puis envoyées au retour du réseau.
@@ -44,7 +44,7 @@ Les spiritueux sont toujours considérés comme prêts. Le bouton **✨ Estimer 
 
 ## Moteur IA et clé API
 
-La reconnaissance photo et les accords nécessitent une clé API personnelle, à saisir dans **Réglages → Intelligence artificielle**. Elle reste sur le téléphone ; les requêtes partent directement du navigateur vers le fournisseur choisi.
+La reconnaissance photo et les accords nécessitent une clé API personnelle, à saisir une fois dans **Réglages → Intelligence artificielle** (enregistrée dans le compte, ou sur le téléphone sans compte) ; les requêtes partent directement du navigateur vers le fournisseur choisi.
 
 - **Google Gemini (par défaut, gratuit)** : clé sur https://aistudio.google.com/apikey (compte Google, sans carte bancaire). Quotas journaliers limités mais suffisants pour un usage personnel ; sur l'offre gratuite, Google peut utiliser les données envoyées pour améliorer ses modèles. Modèle `gemini-flash-latest` (repli sur `gemini-2.5-flash`), recherche Google pour les accords.
 - **Claude (payant à l'usage)** : clé sur https://console.anthropic.com/ avec du crédit. Modèle `claude-opus-5-5`, recherche web pour les accords. Un abonnement Claude.ai (Pro/Max) ne fournit pas de clé API.

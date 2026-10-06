@@ -2,7 +2,7 @@
 // Deux moteurs au choix : Google Gemini (offre gratuite) ou Claude (payant à l'usage).
 
 export const PROVIDERS = {
-  gemini: { label: "Google Gemini", keyHint: "AIza…" },
+  gemini: { label: "Google Gemini", keyHint: "AIza… ou AQ.…" },
   claude: { label: "Claude", keyHint: "sk-ant-…" },
 };
 
