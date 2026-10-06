@@ -43,15 +43,17 @@ async function claudeComplete(key, { system, text, image, web, effort }) {
 }
 
 // ---------- Gemini ----------
-// « gemini-flash-latest » suit automatiquement le dernier modèle Flash (offre gratuite).
-// Si un modèle est surchargé (5xx) ou que son quota gratuit est épuisé (429), on essaie le suivant :
-// les quotas gratuits sont comptés séparément pour chaque modèle.
-const GEMINI_MODELS = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-flash-lite-latest", "gemini-2.5-flash-lite"];
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
+// Modèles essayés dans l'ordre. Google retire régulièrement d'anciens modèles (« no longer available
+// to new users ») : un modèle indisponible, surchargé (5xx) ou dont le quota gratuit est épuisé (429,
+// compté par modèle) fait passer au suivant. Le dernier modèle qui a fonctionné est essayé en premier,
+// et si tous échouent, la liste des modèles réellement proposés à la clé est consultée.
+const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.5-flash-lite", "gemini-flash-lite-latest"];
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+const GEMINI_LAST = "macave.gemini.model";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function geminiCall(key, model, body) {
-  const res = await fetch(`${GEMINI_URL}${model}:generateContent`, {
+  const res = await fetch(`${GEMINI_URL}/${model}:generateContent`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": key },
     body: JSON.stringify(body),
@@ -66,6 +68,29 @@ async function geminiCall(key, model, body) {
   return data;
 }
 
+const isKeyError = (err) =>
+  err.status === 401 || /API_KEY_INVALID|API key not valid|PERMISSION_DENIED.*key/i.test(`${err.reason} ${err.message}`);
+
+// Modèles « flash » de génération de texte proposés à cette clé, du plus récent au plus ancien.
+async function discoverModels(key) {
+  try {
+    const res = await fetch(`${GEMINI_URL}?pageSize=200`, { headers: { "x-goog-api-key": key } });
+    const data = await res.json();
+    const version = (n) => parseFloat(n.match(/gemini-(\d+(?:\.\d+)?)/)?.[1] || "0");
+    return (data.models || [])
+      .filter((m) => m.supportedGenerationMethods?.includes("generateContent"))
+      .map((m) => m.name.replace(/^models\//, ""))
+      .filter((n) => /^gemini-.*flash/.test(n) && !/image|tts|audio|live|embedding|thinking-exp/.test(n))
+      .sort((a, b) => version(b) - version(a) || /lite/.test(a) - /lite/.test(b));
+  } catch {
+    return [];
+  }
+}
+
+function readLast() {
+  try { return localStorage.getItem(GEMINI_LAST); } catch { return null; }
+}
+
 async function geminiComplete(key, { system, text, image, json, web }) {
   const parts = [];
   if (image) parts.push({ inline_data: { mime_type: image.mediaType, data: image.base64 } });
@@ -75,21 +100,33 @@ async function geminiComplete(key, { system, text, image, json, web }) {
   if (json) body.generationConfig = { responseMimeType: "application/json" };
   if (web) body.tools = [{ google_search: {} }];
 
-  let lastErr;
-  for (const model of GEMINI_MODELS) {
+  const tried = new Set();
+  const errors = [];
+  let queue = [...new Set([readLast(), ...GEMINI_MODELS].filter(Boolean))];
+  let discovered = false;
+
+  while (queue.length || !discovered) {
+    if (!queue.length) {
+      discovered = true;
+      queue = (await discoverModels(key)).filter((m) => !tried.has(m)).slice(0, 4);
+      continue;
+    }
+    const model = queue.shift();
+    tried.add(model);
     let data;
     try {
       data = await geminiCall(key, model, body);
     } catch (err) {
-      lastErr = err;
+      if (isKeyError(err)) throw err;
+      let last = err;
       if (err.status >= 500) {
-        // Surcharge passagère : un nouvel essai après une courte pause, puis modèle suivant.
+        // Surcharge passagère : un nouvel essai après une courte pause.
         await sleep(1500);
-        try { data = await geminiCall(key, model, body); } catch (err2) { lastErr = err2; }
+        try { data = await geminiCall(key, model, body); } catch (err2) { last = err2; }
       }
       if (!data) {
-        if (err.status === 404 || err.status === 429 || lastErr.status >= 500) continue;
-        throw lastErr;
+        errors.push({ model, err: last });
+        continue;
       }
     }
     const cand = data.candidates?.[0];
@@ -98,9 +135,18 @@ async function geminiComplete(key, { system, text, image, json, web }) {
       if (data.promptFeedback?.blockReason || cand?.finishReason === "SAFETY") throw new Error("La demande a été refusée par le modèle.");
       throw new Error("Réponse vide de l'IA, réessayez.");
     }
+    try { localStorage.setItem(GEMINI_LAST, model); } catch {}
     return out;
   }
-  throw lastErr || new Error("Modèle Gemini indisponible.");
+
+  // Aucun modèle n'a répondu : on remonte l'erreur la plus parlante.
+  if (readLast() && tried.has(readLast())) { try { localStorage.removeItem(GEMINI_LAST); } catch {} }
+  const pick = errors.find((e) => e.err.status === 429) || errors.find((e) => e.err.status >= 500) || errors[0];
+  if (!pick) throw new Error("Aucun modèle Gemini disponible pour cette clé.");
+  const err = new Error(`${pick.err.message} (modèles essayés : ${[...tried].join(", ")})`);
+  err.status = pick.err.status;
+  err.reason = pick.err.reason;
+  throw err;
 }
 
 // ---------- Commun ----------
