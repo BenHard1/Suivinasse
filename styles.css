@@ -105,14 +105,14 @@ html.ios-standalone {
 }
 .brand-full, .brand-icon { position: absolute; display: block; width: auto; transform-origin: 0 0; transition: transform .35s ease, opacity .3s ease; }
 .brand-full { height: var(--full-h); top: calc(env(safe-area-inset-top) + (var(--head-h) - var(--full-h)) / 2); left: calc(50% - var(--full-h) * .96515); }
-/* Le logo réduit se place à droite du bouton Réglages (décalage --logo-shift). */
-:root { --logo-shift: 44px; }
+/* Décalage éventuel du logo réduit vers la droite (aucun : le bouton Réglages est à droite). */
+:root { --logo-shift: 0px; }
 .brand-icon {
   height: var(--text-h); top: calc(env(safe-area-inset-top) + var(--text-top)); left: calc(16px + var(--logo-shift)); opacity: 0;
   transform: translate(calc(var(--icon-tx) - var(--logo-shift)), var(--icon-ty)) scale(var(--icon-s));
 }
 .topbar-settings {
-  position: absolute; z-index: 1; left: 8px; top: env(safe-area-inset-top); bottom: 0; margin: auto 0;
+  position: relative; z-index: 1; margin-right: -8px;
   width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; background: none; color: inherit; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
