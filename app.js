@@ -2,6 +2,7 @@ import { recognizeLabel, estimateWindow, pairWines, tastingSheet, findProducerSi
 import * as store from "./storage.js";
 import { putPhoto, photoUrl, deletePhotos, syncPhotos, onPhotoError } from "./photos.js";
 import { rankForMeal, PROFILE_LABELS } from "./pairing.js";
+import { findReference, referenceWindow, APPELLATIONS, COLOR_LABELS } from "./vins.js";
 
 // ---------- Stockage ----------
 const PROVIDER_KEY = "macave.provider";
@@ -60,10 +61,15 @@ const catOf = (name) => state.categories.find((c) => c.name === name);
 const isSpirit = (w) => catOf(w.category)?.kind === "spiritueux";
 
 // ---------- Maturité ----------
+// Ordre : dates saisies sur la fiche, puis référentiel des appellations (vins.js), puis règle par
+// catégorie à partir du millésime.
+const entryYear = (w) => (w.createdAt ? new Date(w.createdAt).getFullYear() : new Date().getFullYear());
 function windowOf(w) {
   if (w.boireDe || w.boireJusqua) {
     return [w.boireDe || w.millesime || null, w.boireJusqua || null];
   }
+  const ref = referenceWindow(w, entryYear(w));
+  if (ref) return [ref.de, ref.ja];
   if (!w.millesime) return [null, null];
   const [a, b] = DEFAULT_WINDOWS[w.category] || [2, 8];
   return [w.millesime + a, w.millesime + b];
@@ -476,6 +482,58 @@ $("#lieu-select").onchange = (e) => {
   if (p) formDirty = true;
 };
 
+// ---------- Référentiel (valeurs cohérentes à la saisie) ----------
+// L'appellation (ou la cuvée, la région, les cépages) est comparée au référentiel : la fenêtre de
+// dégustation et les cépages sont proposés automatiquement dans les champs vides, sans appel à l'IA.
+// Une valeur saisie à la main n'est jamais remplacée.
+$("#appellation-list").innerHTML = APPELLATIONS.map((a) => `<option value="${esc(a)}">`).join("");
+
+function setAuto(field, value) {
+  const el = form[field];
+  if (el.value && !el.dataset.auto) return false; // saisi par l'utilisateur
+  el.value = value ?? "";
+  if (value != null && value !== "") el.dataset.auto = "1";
+  else delete el.dataset.auto;
+  return true;
+}
+
+function updateReference() {
+  const data = readForm();
+  const hint = $("#ref-hint");
+  const r = findReference(data);
+  if (!r) {
+    hint.hidden = true;
+    // Plus de correspondance : on retire ce qui avait été proposé automatiquement.
+    for (const f of ["boireDe", "boireJusqua", "cepages", "region"]) if (form[f].dataset.auto) setAuto(f, "");
+    return null;
+  }
+  const win = isSpirit(data) ? null : referenceWindow(data, new Date().getFullYear());
+  if (win) {
+    setAuto("boireDe", win.de);
+    setAuto("boireJusqua", win.ja);
+  }
+  setAuto("cepages", r.cepages);
+  setAuto("region", r.region);
+  hint.innerHTML = `<b>${esc(r.name)}</b> · ${esc(COLOR_LABELS[r.color])} (${esc(r.region)})
+    <span class="muted">Cépages : ${esc(r.cepages)}</span>
+    <span class="muted">Arômes : ${esc(r.aromes)}</span>
+    <span class="muted">${win ? `Garde habituelle : à boire de ${win.de} à ${win.ja}` : r.nv ? "Indiquez le millésime s'il y en a un pour la garde." : "Indiquez le millésime pour calculer la garde."}</span>`;
+  hint.hidden = false;
+  return win;
+}
+
+for (const f of ["category", "appellation", "region", "cuvee", "cepages", "millesime"]) {
+  form[f].addEventListener("input", updateReference);
+  form[f].addEventListener("change", updateReference);
+}
+// Saisie manuelle de la fenêtre ou des cépages : la valeur n'est plus remplacée automatiquement.
+for (const f of ["boireDe", "boireJusqua", "cepages", "region"]) form[f].addEventListener("input", () => delete form[f].dataset.auto);
+
+function clearReference() {
+  for (const f of ["boireDe", "boireJusqua", "cepages", "region"]) delete form[f].dataset.auto;
+  $("#ref-hint").hidden = true;
+}
+
 function fillCategorySelect(selected) {
   form.category.innerHTML = state.categories
     .map((c) => `<option ${c.name === selected ? "selected" : ""}>${esc(c.name)}</option>`)
@@ -492,6 +550,7 @@ form.quantity.oninput = () => setQty(form.quantity.value);
 function resetForm() {
   form.reset();
   form.id.value = "";
+  clearReference();
   fillCategorySelect(activeCat !== "Toutes" ? activeCat : "Rouge");
   fillPlaceSelect(activePlace !== "all" && activePlace !== "none" ? activePlace : "");
   const used = state.wines.map((w) => (w.region || "").trim()).filter(Boolean);
@@ -529,6 +588,7 @@ function editWine(id) {
   }
   form.auFrais.checked = Boolean(w.auFrais);
   fillPlaceSelect(w.lieu);
+  updateReference();
   setQty(w.quantity || 0);
   $("#qty-label").firstChild.textContent = "Bouteilles en cave";
   pendingPhotos = [...photosOf(w)];
@@ -588,6 +648,7 @@ function newVintage() {
   form.auFrais.checked = Boolean(base.auFrais);
   fillPlaceSelect(base.lieu);
   vintageBase = base;
+  updateReference();
   renderVintageTabs(null, true);
   $("#btn-cancel").hidden = false;
   $("#view-title").textContent = "Nouveau millésime";
@@ -897,6 +958,13 @@ async function onLabelPhoto(e) {
     for (const k of ["cuvee", "domaine", "region", "appellation", "cepages", "millesime", "boireDe", "boireJusqua"]) {
       if (result[k] != null && result[k] !== "") form[k].value = result[k];
     }
+    // Appellation connue du référentiel : sa fenêtre remplace l'estimation de l'IA, pour des valeurs
+    // cohérentes d'une bouteille à l'autre.
+    if (findReference(readForm())) {
+      for (const f of ["boireDe", "boireJusqua"]) form[f].dataset.auto = "1";
+      if (!form.cepages.value) form.cepages.dataset.auto = "1";
+    }
+    updateReference();
     status.textContent = "Fiche pré-remplie — vérifiez, choisissez le nombre de bouteilles puis enregistrez.";
   } catch (err) {
     status.textContent = err.message;
@@ -976,6 +1044,9 @@ $("#btn-estimate").onclick = async (e) => {
     timer.done();
     if (r.boireDe) form.boireDe.value = r.boireDe;
     if (r.boireJusqua) form.boireJusqua.value = r.boireJusqua;
+    // Estimation demandée explicitement : elle n'est plus remplacée par le référentiel.
+    if (r.boireDe) delete form.boireDe.dataset.auto;
+    if (r.boireJusqua) delete form.boireJusqua.dataset.auto;
     status.textContent = r.boireDe || r.boireJusqua
       ? `Fenêtre estimée : ${r.boireDe ?? "?"} – ${r.boireJusqua ?? "?"}`
       : "L'IA n'a pas pu estimer la fenêtre pour ce vin.";

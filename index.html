@@ -120,8 +120,10 @@
           <datalist id="region-list"></datalist>
         </label>
         <label>Appellation <span class="muted">(facultatif)</span>
-          <input name="appellation" placeholder="ex : Chablis Grand Cru">
+          <input name="appellation" list="appellation-list" placeholder="ex : Chablis Grand Cru" autocomplete="off">
+          <datalist id="appellation-list"></datalist>
         </label>
+        <div id="ref-hint" class="ref-hint" hidden></div>
         <label>Cépages
           <input name="cepages" placeholder="ex : Chardonnay">
         </label>

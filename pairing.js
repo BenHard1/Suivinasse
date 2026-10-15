@@ -2,6 +2,8 @@
 // (rouge léger / corsé, blanc vif / ample / aromatique, liquoreux…) et le classement tient
 // compte de la maturité. Sert de réponse immédiate et de présélection pour l'IA.
 
+import { findReference } from "./vins.js";
+
 const norm = (s) => String(s ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 const has = (text, words) => words.some((w) => text.includes(w));
 
@@ -16,6 +18,9 @@ export function profilesOf(w, kind) {
   const t = norm([w.cepages, w.region, w.appellation, w.cuvee, w.domaine, w.commentaire].join(" "));
   const cat = norm(w.category);
   if (kind === "spiritueux") return ["spiritueux"];
+  // Appellation reconnue dans le référentiel : son style fait foi.
+  const ref = findReference(w);
+  if (ref?.profile) return [ref.profile];
   if (cat.includes("champagne") || has(t, ["cremant", "petillant", "mousseux", "brut", "blanquette"])) return ["bulles"];
   if (cat.includes("porto") || has(t, ["porto", "banyuls", "maury", "rivesaltes", "vin doux naturel", "pineau"])) return ["porto"];
   if (cat.includes("rose")) return ["rose"];

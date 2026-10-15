@@ -42,11 +42,17 @@ Tant que `config.js` est vide, l'application fonctionne sans compte (données su
 
 Chaque ami crée son compte depuis l'écran de connexion et a sa propre cave. Pour la photo et les accords, chacun saisit sa propre clé API dans Réglages.
 
-## Maturité
+## Maturité et référentiel des vins
 
-Si la fenêtre « À boire de / jusqu'à » est vide, une estimation par défaut est calculée à partir du millésime :
-Rouge +3 à +12 ans, Blanc +1 à +6, Rosé +0 à +2, Champagne +2 à +10, Porto +5 à +40, autres vins +2 à +8.
-Les spiritueux sont toujours considérés comme prêts. Le bouton **Estimer avec l'IA** donne une estimation plus précise.
+Le fichier [`vins.js`](vins.js) contient un **référentiel de plus de 300 appellations (370 lignes appellation × couleur)** (France détaillée par appellation et couleur, plus Italie, Espagne, Portugal, Allemagne, Autriche, Suisse, Hongrie, Nouveau monde, Liban, Grèce), avec pour chacune la fenêtre de garde habituelle (en années après le millésime), les cépages, le profil aromatique et le style du vin. Il fonctionne sans IA :
+
+- **À la saisie**, dès que l'appellation (proposée en liste), la cuvée, la région ou les cépages correspondent, la fiche affiche la référence et remplit les champs vides : fenêtre de dégustation, cépages, région. Une valeur saisie à la main n'est jamais remplacée.
+- **Mentions** : Grand cru, Premier cru, Cru classé, Vieilles vignes allongent la garde ; Vendanges tardives, moelleux, Gran Reserva, Vintage… renvoient à leur propre ligne.
+- **Vins sans millésime** (champagne brut sans année, crémants, porto ruby / tawny, xérès…) : la fenêtre part de l'année d'entrée en cave.
+- **Photo d'étiquette** : si l'appellation lue par l'IA est connue, la fenêtre du référentiel remplace l'estimation de l'IA, pour des valeurs cohérentes d'une bouteille à l'autre.
+- **Accords mets-vins** : le style du référentiel (rouge léger / corsé, blanc vif / ample / aromatique, liquoreux…) sert au classement immédiat.
+
+Pour la maturité, l'ordre est : dates saisies sur la fiche, puis référentiel, puis à défaut une règle par catégorie à partir du millésime : Rouge +3 à +12 ans, Blanc +1 à +6, Rosé +0 à +2, Champagne +2 à +10, Porto +5 à +40, autres vins +2 à +8. Les spiritueux sont toujours considérés comme prêts. Le bouton **Estimer avec l'IA** reste disponible pour un avis au cas par cas.
 
 ## Moteur IA et clé API
 
@@ -71,6 +77,7 @@ Pour tester en local : `python3 -m http.server` puis ouvrir http://localhost:800
 - `index.html`, `styles.css`, `app.js` — interface et logique
 - `storage.js`, `config.js`, `supabase/schema.sql` — comptes et synchronisation
 - `photos.js` — photos haute définition (IndexedDB + Supabase Storage)
+- `vins.js` — référentiel des appellations (garde, cépages, arômes, style)
 - `assets/`, `icons/` — logo et icônes
 - `terroir.js`, `france-map.js` — données des régions viticoles et fond de carte des départements ([svg-maps](https://github.com/VictorCazanave/svg-maps) © Victor Cazanave, CC BY 4.0)
 - `pairing.js` — accords rapides sans IA (profils de vins, mots-clés des plats, maturité)
