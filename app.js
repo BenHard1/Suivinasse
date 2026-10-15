@@ -105,8 +105,58 @@ function wineTitle(w) {
   return [w.cuvee, w.domaine].filter(Boolean).join(" — ") || w.appellation || "Sans nom";
 }
 
-// Verre de vin qui se remplit, affiché pendant les appels à l'IA.
-function wineLoader(text) {
+// ---------- Durée des appels IA ----------
+// Estimation du temps restant : durée moyenne des derniers appels du même type sur cet appareil
+// (par moteur), ou valeur par défaut tant qu'il n'y en a pas eu.
+const AI_TIMES_KEY = "macave.aiTimes";
+const AI_DEFAULT_S = { label: 12, window: 8, tasting: 45, pairing: 20, pairingWeb: 35 };
+
+function aiTimes() {
+  try { return JSON.parse(localStorage.getItem(AI_TIMES_KEY)) || {}; } catch { return {}; }
+}
+const aiTimeKey = (task) => `${aiConfig().provider || "?"}:${task}`;
+function aiEstimate(task) {
+  return aiTimes()[aiTimeKey(task)] || AI_DEFAULT_S[task] * 1000;
+}
+
+// Démarre le chronomètre d'un appel ; done() enregistre sa durée (appels réussis seulement).
+function aiTimer(task) {
+  const start = Date.now();
+  return {
+    task,
+    start,
+    est: aiEstimate(task),
+    done() {
+      const t = aiTimes();
+      const k = aiTimeKey(task);
+      const ms = Date.now() - start;
+      t[k] = t[k] ? Math.round(t[k] * 0.6 + ms * 0.4) : ms; // moyenne glissante
+      try { localStorage.setItem(AI_TIMES_KEY, JSON.stringify(t)); } catch {}
+    },
+  };
+}
+
+function formatSeconds(s) {
+  return s >= 60 ? `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, "0")} s` : `${s} s`;
+}
+
+// Mise à jour de toutes les barres de progression affichées.
+function tickProgress() {
+  document.querySelectorAll(".ai-progress").forEach((el) => {
+    const t = Date.now() - +el.dataset.start;
+    const est = +el.dataset.est;
+    // Avance régulière jusqu'à 90 % à l'heure prévue, puis ralentit sans jamais atteindre 100 %.
+    const p = t < est ? 0.9 * (t / est) : 0.9 + 0.09 * (1 - Math.exp(-(t - est) / est));
+    el.querySelector(".ai-bar span").style.width = `${(p * 100).toFixed(1)}%`;
+    el.querySelector(".ai-eta").textContent = t < est
+      ? `Environ ${formatSeconds(Math.ceil((est - t) / 1000))} restantes`
+      : `Plus long que prévu… encore quelques instants (${formatSeconds(Math.round(t / 1000))} écoulées)`;
+  });
+}
+setInterval(tickProgress, 250);
+
+// Verre de vin qui se remplit, affiché pendant les appels à l'IA (avec barre et temps restant si timer).
+function wineLoader(text, timer) {
   const bowl = "M15 6h34c1 12 1 24-4 32-3 5-8 8-13 8s-10-3-13-8C14 30 14 18 15 6Z";
   return `<div class="wine-loader" role="status">
     <svg viewBox="0 0 64 96" aria-hidden="true">
@@ -120,7 +170,19 @@ function wineLoader(text) {
       <path class="wl-shine" d="M21 12c-1 8-1 15 1 21"/>
     </svg>
     <p>${esc(text)}</p>
+    ${timer ? `<div class="ai-progress" data-start="${timer.start}" data-est="${timer.est}">
+      <div class="ai-bar" role="progressbar" aria-label="Progression estimée"><span></span></div>
+      <p class="ai-eta"></p>
+    </div>` : ""}
   </div>`;
+}
+
+// Affiche le chargement avec progression dans `el` et lance le chronomètre.
+function showAiLoader(el, text, task) {
+  const timer = aiTimer(task);
+  el.innerHTML = wineLoader(text, timer);
+  tickProgress();
+  return timer;
 }
 
 // iPhone, appli installée : réglages propres à ce mode (voir styles.css, ios-standalone).
@@ -705,12 +767,13 @@ async function onLabelPhoto(e) {
     const big = await resizeImage(file, 1280);
     // La photo de l'étiquette rejoint les photos de la bouteille.
     await addPhoto(file);
-    status.innerHTML = wineLoader("Analyse de l'étiquette en cours…");
+    const timer = showAiLoader(status, "Analyse de l'étiquette en cours…", "label");
     const result = await recognizeLabel(
       aiConfig(),
       { base64: big.split(",")[1], mediaType: "image/jpeg" },
       state.categories.map((c) => c.name),
     );
+    timer.done();
     if (result.category && catOf(result.category)) fillCategorySelect(result.category);
     for (const k of ["cuvee", "domaine", "region", "appellation", "cepages", "millesime", "boireDe", "boireJusqua"]) {
       if (result[k] != null && result[k] !== "") form[k].value = result[k];
@@ -755,9 +818,10 @@ $("#btn-tasting").onclick = async (e) => {
   const status = $("#tasting-status");
   btn.disabled = true;
   status.className = "small";
-  status.innerHTML = wineLoader("Recherche en ligne et rédaction de la fiche…");
+  const timer = showAiLoader(status, "Recherche en ligne et rédaction de la fiche…", "tasting");
   try {
     pendingTasting = await tastingSheet(aiConfig(), data);
+    if (pendingTasting.web) timer.done(); // repli sans recherche : durée non représentative
     formDirty = true;
     renderTasting();
     status.textContent = pendingTasting.web
@@ -786,10 +850,11 @@ $("#btn-estimate").onclick = async (e) => {
   const status = $("#estimate-status");
   btn.disabled = true;
   btn.querySelector("span").textContent = "Estimation…";
-  status.textContent = "";
   status.className = "small";
+  const timer = showAiLoader(status, "Estimation de la fenêtre de dégustation…", "window");
   try {
     const r = await estimateWindow(aiConfig(), data);
+    timer.done();
     if (r.boireDe) form.boireDe.value = r.boireDe;
     if (r.boireJusqua) form.boireJusqua.value = r.boireJusqua;
     status.textContent = r.boireDe || r.boireJusqua
@@ -854,11 +919,14 @@ $("#btn-pair").onclick = async () => {
   }
   const btn = $("#btn-pair");
   btn.disabled = true;
-  aiPart.innerHTML = wineLoader("Le sommelier affine la sélection…");
+  const useWeb = $("#use-web").checked;
+  const timer = showAiLoader(aiPart, useWeb ? "Le sommelier cherche en ligne et affine la sélection…" : "Le sommelier affine la sélection…",
+    useWeb ? "pairingWeb" : "pairing");
   // Présélection : les 25 bouteilles les plus pertinentes suffisent et accélèrent la réponse.
   const candidates = ranked.slice(0, 25).map((r) => ({ ...r.wine, photo: undefined, photos: undefined, degustation: undefined, history: undefined, maturityLabel: r.maturity.label }));
   try {
-    const res = await pairWines(ai, meal, candidates, $("#use-web").checked);
+    const res = await pairWines(ai, meal, candidates, useWeb);
+    if (!res.note) timer.done(); // repli sans recherche : durée non représentative
     const byId = (id) => state.wines.find((w) => w.id === id);
     aiPart.innerHTML = `<h3 class="res-title">L'avis du sommelier</h3>
       ${res.recommandations.map((r) => {

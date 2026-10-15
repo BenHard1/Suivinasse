@@ -329,6 +329,10 @@ legend { font-weight: 600; padding: 0 4px; }
 .wine-loader { display: flex; flex-direction: column; align-items: center; padding: 18px 0 8px; color: var(--muted); font-size: .9rem; }
 .wine-loader svg { width: 64px; height: 96px; overflow: visible; }
 .wine-loader p { margin: 8px 0 0; text-align: center; }
+.ai-progress { width: min(280px, 100%); margin-top: 10px; }
+.ai-bar { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.ai-bar span { display: block; height: 100%; width: 0; border-radius: 3px; background: var(--wine, var(--primary)); transition: width .25s linear; }
+.ai-progress .ai-eta { margin: 6px 0 0; font-size: .8rem; font-variant-numeric: tabular-nums; }
 .wl-glass { fill: none; stroke: var(--text); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; opacity: .75; }
 .wl-shine { fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; opacity: .5; }
 .wl-wave { fill: var(--wine); animation: wl-slosh 1.2s linear infinite; }

@@ -48,6 +48,8 @@ Les spiritueux sont toujours considérés comme prêts. Le bouton **Estimer avec
 
 ## Moteur IA et clé API
 
+Pendant chaque appel IA, une barre de progression et le **temps restant estimé** s'affichent. L'estimation part d'une valeur par défaut (étiquette ≈ 12 s, fenêtre ≈ 8 s, fiche de dégustation ≈ 45 s, accords ≈ 20 s, ≈ 35 s avec recherche internet) puis s'ajuste à la durée moyenne des derniers appels sur l'appareil, pour chaque moteur.
+
 La reconnaissance photo et les accords nécessitent une clé API personnelle, à saisir une fois dans **Réglages → Intelligence artificielle** (enregistrée dans le compte, ou sur le téléphone sans compte) ; les requêtes partent directement du navigateur vers le fournisseur choisi.
 
 - **Google Gemini (par défaut, gratuit)** : clé sur https://aistudio.google.com/apikey (compte Google, sans carte bancaire). Quotas journaliers limités mais suffisants pour un usage personnel ; sur l'offre gratuite, Google peut utiliser les données envoyées pour améliorer ses modèles. Modèles essayés dans l'ordre : `gemini-3.5-flash`, `gemini-flash-latest`, `gemini-3.5-flash-lite`, `gemini-flash-lite-latest` ; un modèle retiré, surchargé ou au quota épuisé fait passer au suivant, le dernier modèle fonctionnel est mémorisé, et si tous échouent l'app interroge la liste des modèles disponibles pour la clé. Recherche Google pour les accords (repli sans recherche si elle est refusée).
