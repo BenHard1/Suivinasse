@@ -1131,6 +1131,7 @@ function renderRegionDetail() {
     regionTab = t.dataset.regionTab;
     renderRegionDetail();
   }));
+  el.querySelectorAll("[data-goto-producer]").forEach((b) => (b.onclick = () => openProducer(b.dataset.gotoProducer)));
   el.querySelectorAll("[data-region-producer]").forEach((h) => (h.onclick = () => {
     const k = h.dataset.regionProducer;
     openRegionProducers.has(k) ? openRegionProducers.delete(k) : openRegionProducers.add(k);
@@ -1166,7 +1167,10 @@ function regionCellarHtml(mine) {
         <svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
       </button>
       ${open ? `<div class="producer-body">
-        ${site ? `<div class="producer-site"><a class="site-link" href="${esc(site)}" target="_blank" rel="noopener">${ICON_GLOBE}${esc(siteLabel(site))}</a></div>` : ""}
+        <div class="producer-site">
+          ${g.key ? `<button type="button" class="btn btn-ghost btn-small" data-goto-producer="${esc(g.key)}"><svg class="ico ico-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V10l7-5 7 5v11"/><path d="M9 21v-6h6v6"/></svg><span>Fiche du vigneron</span></button>` : ""}
+          ${site ? `<a class="site-link" href="${esc(site)}" target="_blank" rel="noopener">${ICON_GLOBE}${esc(siteLabel(site))}</a>` : ""}
+        </div>
         ${g.wines.map(cardHtml).join("")}
       </div>` : ""}
     </div>`;
@@ -1360,6 +1364,14 @@ function renderProducers() {
     };
     bindCards(box);
   });
+}
+
+// Ouvre l'onglet Vignerons sur la fiche dépliée de ce producteur.
+function openProducer(key) {
+  openProducers.add(key);
+  show("producers");
+  const box = [...document.querySelectorAll("#producer-list .producer")].find((b) => b.dataset.key === key);
+  box?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function setProducerSite(key, value) {
