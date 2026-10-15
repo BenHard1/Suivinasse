@@ -533,3 +533,4 @@ legend { font-weight: 600; padding: 0 4px; }
 .producer-site .site-edit { display: flex; gap: 6px; width: 100%; }
 .producer-site .site-edit input { margin: 0; flex: 1; min-width: 0; }
 .site-link { display: inline-flex; align-items: center; gap: 4px; }
+.region-tabs { margin: 2px 0 6px; }

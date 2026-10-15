@@ -1125,11 +1125,52 @@ function renderRegionDetail() {
     <h3>Appellations phares</h3><p>${r.appellations.map(esc).join(" · ")}</p>
     <h3>Styles</h3><p>${esc(r.styles)}</p>
     <h3>Dans ma cave</h3>
-    ${mine.length
-      ? `<p class="muted small">${bottles(mine)} bouteille${bottles(mine) > 1 ? "s" : ""}</p><div class="region-wines">${mine.map(cardHtml).join("")}</div>`
-      : `<p class="muted small">Aucune bouteille de cette région pour le moment.</p>`}
+    ${mine.length ? regionCellarHtml(mine) : `<p class="muted small">Aucune bouteille de cette région pour le moment.</p>`}
   </div>`;
+  el.querySelectorAll("[data-region-tab]").forEach((t) => (t.onclick = () => {
+    regionTab = t.dataset.regionTab;
+    renderRegionDetail();
+  }));
+  el.querySelectorAll("[data-region-producer]").forEach((h) => (h.onclick = () => {
+    const k = h.dataset.regionProducer;
+    openRegionProducers.has(k) ? openRegionProducers.delete(k) : openRegionProducers.add(k);
+    renderRegionDetail();
+  }));
   bindCards(el);
+}
+
+// « Dans ma cave » d'une région : onglet Bouteilles (liste des fiches) ou Vignerons (domaines de la région).
+let regionTab = "bottles";
+const openRegionProducers = new Set();
+
+function regionCellarHtml(mine) {
+  const n = bottles(mine);
+  const groups = new Map();
+  for (const w of mine) {
+    const key = producerKey(w.domaine);
+    if (!groups.has(key)) groups.set(key, { key, name: (w.domaine || "").trim() || NO_PRODUCER, wines: [] });
+    groups.get(key).wines.push(w);
+  }
+  const producers = [...groups.values()].sort((a, b) => (a.key === "") - (b.key === "") || a.name.localeCompare(b.name, "fr"));
+  const named = producers.filter((g) => g.key).length;
+  const tab = (id, label) => `<button type="button" class="chip ${regionTab === id ? "active" : ""}" data-region-tab="${id}">${label}</button>`;
+  const tabs = `<div class="chips region-tabs">${tab("bottles", `Bouteilles · ${n}`)}${tab("vignerons", `Vignerons · ${named}`)}</div>`;
+  if (regionTab === "bottles") return `${tabs}<div class="region-wines">${mine.map(cardHtml).join("")}</div>`;
+  return tabs + producers.map((g) => {
+    const site = g.key && state.producers?.[g.key]?.site;
+    const open = openRegionProducers.has(g.key);
+    return `<div class="producer ${open ? "open" : ""}">
+      <button type="button" class="producer-head" data-region-producer="${esc(g.key)}" aria-expanded="${open}">
+        <span class="p-name">${esc(g.name)}</span>
+        <span class="p-count">${bottles(g.wines)}</span>
+        <svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+      </button>
+      ${open ? `<div class="producer-body">
+        ${site ? `<div class="producer-site"><a class="site-link" href="${esc(site)}" target="_blank" rel="noopener">${ICON_GLOBE}${esc(siteLabel(site))}</a></div>` : ""}
+        ${g.wines.map(cardHtml).join("")}
+      </div>` : ""}
+    </div>`;
+  }).join("");
 }
 
 // ---------- Réglages ----------
