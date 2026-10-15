@@ -37,6 +37,9 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; }
+/* Interface figée comme une appli : pas de zoom au double appui, pas de grossissement automatique
+   du texte (rotation de l'iPhone), pour que l'en-tête et la barre du bas gardent toujours leur taille. */
+html { touch-action: manipulation; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   background: var(--bg);
   color: var(--text);
@@ -48,8 +51,7 @@ body {
    notifications sont positionnés dans le corps de page (position absolue, pas « fixed »).
    iPhone, appli installée (classe ios-standalone, barre d'état transparente) : le corps de page reçoit
    la hauteur de l'écran augmentée de la barre d'état. */
-:root { --bar-pad: env(safe-area-inset-bottom); --bar-h: 58px; }
-@media (max-width: 600px) { :root { --bar-h: 68px; } } /* barre du bas plus épaisse sur téléphone */
+:root { --bar-pad: env(safe-area-inset-bottom); --bar-h: 68px; } /* même hauteur sur tous les écrans (celle du téléphone) */
 /* Appli installée : 18 px de plus sous les libellés, pour qu'ils ne touchent jamais le bas de l'écran. */
 html.ios-standalone { --bar-pad: calc(env(safe-area-inset-bottom) + 18px); }
 @media (display-mode: standalone) { :root { --bar-pad: calc(env(safe-area-inset-bottom) + 18px); } }
@@ -395,13 +397,13 @@ legend { font-weight: 600; padding: 0 4px; }
 }
 .tabbar button {
   position: relative; flex: 1; min-width: 0; background: none; border: none; color: #f8f1e7;
-  font: inherit; font-size: .58rem; font-weight: 700; letter-spacing: .01em; text-transform: uppercase; white-space: nowrap;
+  font: inherit; font-size: 9.3px; line-height: 1.2; font-weight: 700; letter-spacing: .01em; text-transform: uppercase; white-space: nowrap;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px 0 4px;
 }
 .tabbar button > * { position: relative; z-index: 2; }
 .tabbar .ico { width: 24px; height: 24px; stroke-width: 1.6; }
 /* Très petits écrans : libellés réduits pour que « Vignerons » tienne comme les autres. */
-@media (max-width: 350px) { .tabbar button:not(.cave-tab) { font-size: .5rem; letter-spacing: 0; } }
+@media (max-width: 350px) { .tabbar button:not(.cave-tab) { font-size: 8px; letter-spacing: 0; } }
 .tabbar button:not(.cave-tab)::before {
   content: ""; position: absolute; z-index: 1; left: 50%; width: 54px; margin-left: -27px;
   top: -8px; bottom: calc(-1 * var(--bar-pad));
@@ -410,7 +412,9 @@ legend { font-weight: 600; padding: 0 4px; }
 }
 .tabbar button.active:not(.cave-tab)::before { transform: none; }
 
-.tabbar .cave-tab { flex: 0 0 108px; justify-content: flex-end; padding-bottom: 12px; font-size: .95rem; letter-spacing: .02em; }
+.tabbar .cave-tab { flex: 0 0 108px; justify-content: flex-end; padding-bottom: 12px; font-size: 15px; letter-spacing: .02em; }
+/* Tailles en pixels (pas en rem) : la barre ne change pas avec le réglage de taille du texte. */
+.tabbar .ico { flex: none; }
 .cave-tab::before {
   content: ""; position: absolute; z-index: 0; left: 50%; top: -50px; width: 104px; height: 104px; margin-left: -52px;
   border-radius: 50%; background: var(--brand);

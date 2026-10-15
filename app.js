@@ -185,6 +185,10 @@ function showAiLoader(el, text, task) {
   return timer;
 }
 
+// Pas de zoom par pincement de la page (Safari iOS ignore user-scalable=no) : l'interface reste figée.
+// La visionneuse de photos a son propre zoom (appui sur la photo).
+for (const ev of ["gesturestart", "gesturechange"]) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
+
 // iPhone, appli installée : réglages propres à ce mode (voir styles.css, ios-standalone).
 if (navigator.standalone === true) document.documentElement.classList.add("ios-standalone");
 
