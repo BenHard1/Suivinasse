@@ -574,7 +574,14 @@ function stepViewer(d) {
   viewer.i = (viewer.i + d + viewer.photos.length) % viewer.photos.length;
   showViewerPhoto();
 }
-$("#photo-viewer").onclick = () => ($("#photo-viewer").hidden = true);
+const closeViewer = () => ($("#photo-viewer").hidden = true);
+$("#photo-viewer").onclick = closeViewer;
+document.addEventListener("keydown", (e) => {
+  if ($("#photo-viewer").hidden) return;
+  if (e.key === "Escape") closeViewer();
+  else if (e.key === "ArrowLeft" && viewer.photos.length > 1) stepViewer(-1);
+  else if (e.key === "ArrowRight" && viewer.photos.length > 1) stepViewer(+1);
+});
 $("#viewer-prev").onclick = (e) => { e.stopPropagation(); stepViewer(-1); };
 $("#viewer-next").onclick = (e) => { e.stopPropagation(); stepViewer(+1); };
 let touchX = null;
