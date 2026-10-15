@@ -54,6 +54,8 @@ Le fichier [`vins.js`](vins.js) contient un **référentiel de plus de 300 appel
 
 Pour la maturité, l'ordre est : dates saisies sur la fiche, puis référentiel, puis à défaut une règle par catégorie à partir du millésime : Rouge +3 à +12 ans, Blanc +1 à +6, Rosé +0 à +2, Champagne +2 à +10, Porto +5 à +40, autres vins +2 à +8. Les spiritueux sont toujours considérés comme prêts. Le bouton **Estimer avec l'IA** reste disponible pour un avis au cas par cas.
 
+**Réglages → Référentiel des vins → Mettre à jour mes fiches** applique le référentiel à toute la cave : nouvelles dates de dégustation pour chaque fiche dont l'appellation est reconnue (les dates existantes sont remplacées), cépages et région complétés s'ils manquent. Confirmation avant, bouton « Annuler » juste après ; les fiches non reconnues et les spiritueux ne changent pas.
+
 ## Moteur IA et clé API
 
 Pendant chaque appel IA, une barre de progression et le **temps restant estimé** s'affichent. L'estimation part d'une valeur par défaut (étiquette ≈ 12 s, fenêtre ≈ 8 s, fiche de dégustation ≈ 45 s, accords ≈ 20 s, ≈ 35 s avec recherche internet) puis s'ajuste à la durée moyenne des derniers appels sur l'appareil, pour chaque moteur.

@@ -1461,6 +1461,49 @@ $("#btn-add-cat").onclick = () => {
   toast(`Catégorie « ${name} » ajoutée`);
 };
 
+// Mise à jour de toutes les fiches avec le référentiel (dates de dégustation, cépages et région
+// manquants). Les valeurs précédentes sont gardées en mémoire pour pouvoir annuler.
+$("#btn-apply-ref").onclick = () => {
+  const changes = [];
+  let unknown = 0;
+  for (const w of state.wines) {
+    if (isSpirit(w)) continue;
+    const r = findReference(w);
+    if (!r) { unknown++; continue; }
+    const win = referenceWindow(w, entryYear(w));
+    const next = {
+      boireDe: win ? win.de : w.boireDe ?? null,
+      boireJusqua: win ? win.ja : w.boireJusqua ?? null,
+      cepages: w.cepages || r.cepages,
+      region: w.region || r.region,
+    };
+    const changed = Object.keys(next).some((k) => (next[k] ?? "") !== (w[k] ?? ""));
+    if (changed) changes.push({ w, next, before: { boireDe: w.boireDe ?? null, boireJusqua: w.boireJusqua ?? null, cepages: w.cepages ?? "", region: w.region ?? "" } });
+  }
+  const status = $("#apply-ref-status");
+  if (!changes.length) {
+    status.textContent = `Rien à changer : les fiches reconnues sont déjà à jour${unknown ? ` (${unknown} fiche(s) sans appellation reconnue)` : ""}.`;
+    return;
+  }
+  const dated = changes.filter((c) => c.next.boireDe !== c.before.boireDe || c.next.boireJusqua !== c.before.boireJusqua).length;
+  if (!confirm(`${changes.length} fiche(s) vont être mises à jour avec le référentiel, dont ${dated} avec de nouvelles dates de dégustation ` +
+    `(les dates actuelles, même saisies à la main, seront remplacées).` +
+    (unknown ? `\n${unknown} fiche(s) sans appellation reconnue resteront inchangées.` : "") + `\n\nContinuer ?`)) return;
+  for (const c of changes) Object.assign(c.w, c.next);
+  save();
+  render();
+  status.textContent = `${changes.length} fiche(s) mises à jour${unknown ? ` · ${unknown} non reconnue(s), inchangées` : ""}.`;
+  toast(`${changes.length} fiche(s) mises à jour`, {
+    label: "Annuler",
+    fn: () => {
+      for (const c of changes) Object.assign(c.w, c.before);
+      save();
+      render();
+      status.textContent = "Mise à jour annulée.";
+    },
+  });
+};
+
 $("#btn-export").onclick = () => {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
