@@ -200,6 +200,10 @@ legend { font-weight: 600; padding: 0 4px; }
   border-radius: 999px; padding: 6px 12px; font: inherit; font-size: .9rem;
 }
 .chip.active { background: var(--primary); color: var(--primary-text); border-color: var(--primary); }
+.vintage-box { margin-bottom: 4px; border-bottom: 1px solid var(--border); }
+.vintage-box[hidden] { display: none; }
+.vintage-n { opacity: .7; font-size: .8rem; margin-left: 2px; }
+.chip-add { border-style: dashed; color: var(--muted); }
 
 .cat-group h3 {
   font-size: .95rem; text-transform: uppercase; letter-spacing: .04em;

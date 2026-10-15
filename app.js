@@ -290,6 +290,8 @@ $("#show-empty").onchange = renderCave;
 // ---------- Formulaire ----------
 const form = $("#wine-form");
 let pendingPhotos = []; // photos de la fiche en cours d'édition
+let formDirty = false; // modifications non enregistrées (avant de changer d'onglet millésime)
+form.addEventListener("input", () => (formDirty = true));
 
 function fillCategorySelect(selected) {
   form.category.innerHTML = state.categories
@@ -314,6 +316,9 @@ function resetForm() {
   setQty(6);
   pendingPhotos = [];
   renderPhotos();
+  formDirty = false;
+  vintageBase = null;
+  renderVintageTabs();
   $("#photo-status").textContent = "";
   $("#estimate-status").textContent = "";
   $("#qty-label").firstChild.textContent = "Nombre de bouteilles rentrées";
@@ -336,10 +341,62 @@ function editWine(id) {
   $("#qty-label").firstChild.textContent = "Bouteilles en cave";
   pendingPhotos = [...photosOf(w)];
   renderPhotos();
+  vintageBase = w;
+  renderVintageTabs(w.id);
   $("#btn-cancel").hidden = false;
   $("#btn-delete").hidden = false;
   $("#btn-save").textContent = "Mettre à jour";
   show("add");
+}
+
+// ---------- Onglets millésimes ----------
+// Une fiche par millésime ; les fiches d'une même cuvée (même cuvée + domaine) sont réunies en onglets.
+let vintageBase = null; // fiche dont on affiche les millésimes
+const cuveeKey = (w) => `${(w.cuvee || "").trim().toLowerCase()}|${(w.domaine || "").trim().toLowerCase()}`;
+
+function vintagesOf(w) {
+  const key = cuveeKey(w);
+  return state.wines
+    .filter((x) => cuveeKey(x) === key)
+    .sort((a, b) => (a.millesime == null) - (b.millesime == null) || (a.millesime ?? 0) - (b.millesime ?? 0));
+}
+
+function renderVintageTabs(activeId, isNew = false) {
+  const box = $("#vintage-box");
+  box.hidden = !vintageBase || (!vintageBase.cuvee && !vintageBase.domaine);
+  if (box.hidden) return;
+  const tabs = vintagesOf(vintageBase).map((w) =>
+    `<button type="button" class="chip ${w.id === activeId ? "active" : ""}" data-vintage="${w.id}">` +
+    `${esc(w.millesime ?? "Sans millésime")} <span class="vintage-n">${w.quantity || 0}</span></button>`);
+  if (isNew) tabs.push(`<button type="button" class="chip active">Nouveau</button>`);
+  else tabs.push(`<button type="button" class="chip chip-add" data-vintage-new>+ Millésime</button>`);
+  const el = $("#vintage-tabs");
+  el.innerHTML = tabs.join("");
+  el.querySelectorAll("[data-vintage]").forEach((b) => (b.onclick = () => {
+    if (b.dataset.vintage === activeId || !confirmLeave()) return;
+    editWine(b.dataset.vintage);
+  }));
+  const add = el.querySelector("[data-vintage-new]");
+  if (add) add.onclick = () => confirmLeave() && newVintage();
+  el.querySelector(".chip.active")?.scrollIntoView({ block: "nearest", inline: "center" });
+}
+
+function confirmLeave() {
+  return !formDirty || confirm("Abandonner les modifications non enregistrées de cette fiche ?");
+}
+
+// Nouvel onglet : nouvelle fiche pré-remplie avec la cuvée, à compléter avec le millésime.
+function newVintage() {
+  const base = vintageBase;
+  resetForm();
+  fillCategorySelect(base.category);
+  for (const k of ["cuvee", "domaine", "region", "appellation", "cepages"]) form[k].value = base[k] ?? "";
+  form.auFrais.checked = Boolean(base.auFrais);
+  vintageBase = base;
+  renderVintageTabs(null, true);
+  $("#btn-cancel").hidden = false;
+  $("#view-title").textContent = "Nouveau millésime";
+  form.millesime.focus();
 }
 
 function readForm() {
@@ -441,6 +498,7 @@ function renderPhotos() {
   grid.querySelectorAll("[data-view]").forEach((b) => (b.onclick = () => openViewer(pendingPhotos, +b.dataset.view)));
   grid.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () => {
     pendingPhotos.splice(+b.dataset.del, 1);
+    formDirty = true;
     renderPhotos();
   }));
   $("#add-photos").hidden = pendingPhotos.length >= MAX_PHOTOS;
@@ -450,6 +508,7 @@ function renderPhotos() {
 function addPhoto(src) {
   if (pendingPhotos.length >= MAX_PHOTOS) return false;
   pendingPhotos.push(src);
+  formDirty = true;
   renderPhotos();
   return true;
 }
