@@ -189,6 +189,34 @@ function showAiLoader(el, text, task) {
 // La visionneuse de photos a son propre zoom (appui sur la photo).
 for (const ev of ["gesturestart", "gesturechange"]) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
 
+// Clavier : pendant la saisie, la barre du bas et le bouton + sont masqués (le clavier les couvre),
+// et à la fermeture la page est remise en place. Sur iPhone, Safari fait défiler toute la page pour
+// montrer un champ situé bas à l'écran et ne la ramène pas toujours : la barre restait décalée.
+const isTextField = (el) => el?.matches?.("input:not([type=checkbox]):not([type=radio]):not([type=file]), textarea, select");
+const resetPageScroll = () => {
+  if (window.scrollY || document.documentElement.scrollTop || document.body.scrollTop) {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }
+};
+document.addEventListener("focusin", (e) => {
+  if (isTextField(e.target)) document.documentElement.classList.add("kbd-open");
+});
+document.addEventListener("focusout", () => {
+  setTimeout(() => {
+    if (isTextField(document.activeElement)) return; // passage direct à un autre champ
+    document.documentElement.classList.remove("kbd-open");
+    resetPageScroll();
+  }, 60);
+});
+window.visualViewport?.addEventListener("resize", () => {
+  if (!document.documentElement.classList.contains("kbd-open")) resetPageScroll();
+});
+window.addEventListener("scroll", () => {
+  if (!document.documentElement.classList.contains("kbd-open")) resetPageScroll();
+});
+
 // iPhone, appli installée : réglages propres à ce mode (voir styles.css, ios-standalone).
 if (navigator.standalone === true) document.documentElement.classList.add("ios-standalone");
 
