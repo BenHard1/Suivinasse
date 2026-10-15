@@ -723,9 +723,12 @@ function renderPhotos() {
     .join("");
   grid.querySelectorAll("[data-view]").forEach((b) => (b.onclick = () => openViewer(pendingPhotos, +b.dataset.view)));
   grid.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () => {
+    // Fiche existante : suppression immédiate et définitive, d'où la confirmation.
+    if (form.id.value && !confirm("Supprimer cette photo ?")) return;
     pendingPhotos.splice(+b.dataset.del, 1);
-    formDirty = true;
     renderPhotos();
+    if (savePhotosNow()) toast("Photo supprimée");
+    else formDirty = true;
   }));
   $("#add-photos").hidden = pendingPhotos.length >= MAX_PHOTOS;
   $("#photos-count").textContent = pendingPhotos.length ? `${pendingPhotos.length}/${MAX_PHOTOS}` : "";
@@ -740,8 +743,22 @@ async function addPhoto(file) {
   await putPhoto(id, full);
   addedPhotoIds.add(id);
   pendingPhotos.push({ id, thumb });
-  formDirty = true;
   renderPhotos();
+  if (!savePhotosNow()) formDirty = true;
+  return true;
+}
+
+// Fiche déjà enregistrée : les ajouts et suppressions de photos sont pris en compte tout de suite,
+// sans passer par « Mettre à jour » (pour une nouvelle fiche, ils le sont à l'enregistrement).
+function savePhotosNow() {
+  const w = form.id.value && state.wines.find((x) => x.id === form.id.value);
+  if (!w) return false;
+  const keep = new Set(photoIds(pendingPhotos));
+  photoIds(photosOf(w)).forEach((id) => keep.has(id) || dropPhotos.add(id));
+  setPhotos(w, pendingPhotos);
+  save();
+  flushPhotoDeletes();
+  renderCave();
   return true;
 }
 
