@@ -72,6 +72,7 @@
       <div id="cave-filters">
         <div id="cat-filter" class="chips"></div>
         <div id="store-filter" class="chips"></div>
+        <div id="place-filter" class="chips"></div>
         <label class="toggle"><input type="checkbox" id="show-empty"> Afficher les bouteilles épuisées</label>
       </div>
       <div id="cave-list"></div>
@@ -159,6 +160,10 @@
           <span>Au frais <span class="muted small">(rangée en cave à vin — décoché : en carton)</span></span>
         </label>
 
+        <label>Lieu de rangement <span class="muted">(facultatif)</span>
+          <select name="lieu" id="lieu-select"></select>
+        </label>
+
         <fieldset>
           <legend>Fiche de dégustation</legend>
           <div id="tasting-sheet" class="tasting-sheet" hidden></div>
@@ -239,6 +244,14 @@
       <p id="key-help-claude" class="muted small" hidden>Créez une clé et ajoutez du crédit sur <a href="https://console.anthropic.com/" target="_blank" rel="noopener">console.anthropic.com</a>.</p>
       <input id="api-key" type="password" autocomplete="off">
       <button id="btn-save-key" class="btn btn-secondary btn-block">Enregistrer la clé</button>
+
+      <h2>Lieux de rangement</h2>
+      <p class="muted small">Où sont rangées vos bouteilles (cave, cellier, garage, chez les parents…). Touchez un lieu pour le renommer.</p>
+      <ul id="place-list" class="cat-list"></ul>
+      <div class="row">
+        <input id="new-place" placeholder="Nouveau lieu (ex : Cave à vin du salon)">
+      </div>
+      <button id="btn-add-place" class="btn btn-secondary btn-block">Ajouter le lieu</button>
 
       <h2>Catégories</h2>
       <ul id="cat-list" class="cat-list"></ul>

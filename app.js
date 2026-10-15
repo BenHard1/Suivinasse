@@ -229,6 +229,7 @@ $("#fab-add").onclick = () => {
 // ---------- Cave ----------
 let activeCat = "Toutes";
 let activeStore = "all"; // all | frais | carton
+let activePlace = "all"; // all | none | id d'un lieu de rangement
 
 const REGIONS = [
   "Alsace", "Beaujolais", "Bordeaux", "Bourgogne", "Champagne", "Corse", "Jura", "Languedoc", "Loire",
@@ -265,15 +266,27 @@ function renderCave() {
   ], activeStore, "store");
   $("#store-filter").querySelectorAll(".chip").forEach((c) => (c.onclick = () => { activeStore = c.dataset.store; renderCave(); }));
 
+  // Lieux de rangement (définis dans Réglages) : un filtre de plus s'il y en a.
+  const places = state.locations || [];
+  if (activePlace !== "all" && activePlace !== "none" && !placeOf(activePlace)) activePlace = "all";
+  $("#place-filter").innerHTML = places.length ? chipsHtml([
+    ["all", "Tous les lieux", 0],
+    ...places.map((p) => [p.id, p.name, bottles(inCat.filter((w) => w.lieu === p.id))]),
+    ["none", "Lieu non précisé", bottles(inCat.filter((w) => !placeOf(w.lieu)))],
+  ], activePlace, "place") : "";
+  $("#place-filter").querySelectorAll(".chip").forEach((c) => (c.onclick = () => { activePlace = c.dataset.place; renderCave(); }));
+
   const terms = norm($("#cave-search").value).split(/\s+/).filter(Boolean);
   const list = inCat.filter((w) => {
     if (terms.length) {
-      const text = norm([w.cuvee, w.domaine, w.region, w.appellation, w.cepages, w.millesime, w.category, w.commentaire].join(" "));
+      const text = norm([w.cuvee, w.domaine, w.region, w.appellation, w.cepages, w.millesime, w.category, w.commentaire, placeOf(w.lieu)?.name].join(" "));
       if (!terms.every((t) => text.includes(t))) return false;
     }
     if (!showEmpty && !w.quantity) return false;
     if (activeStore === "frais" && !w.auFrais) return false;
     if (activeStore === "carton" && w.auFrais) return false;
+    if (activePlace === "none" && placeOf(w.lieu)) return false;
+    if (activePlace !== "all" && activePlace !== "none" && w.lieu !== activePlace) return false;
     return true;
   });
 
@@ -306,6 +319,7 @@ function renderCave() {
   bindCards(el);
 }
 
+const ICON_PIN = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
 const ICON_SNOW = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M4.9 7l14.2 10M4.9 17 19.1 7M9 4l3 2 3-2M9 20l3-2 3 2"/></svg>';
 const ICON_BOX = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5Z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg>';
 
@@ -319,6 +333,7 @@ function cardHtml(w) {
       ${sub ? `<div class="sub">${esc(sub)}</div>` : ""}
       <span class="badge ${m.cls}">${esc(m.label)}</span>
       <button class="store-pill ${w.auFrais ? "frais" : ""}" data-store-toggle title="Changer le rangement">${w.auFrais ? ICON_SNOW + "Au frais" : ICON_BOX + "En carton"}</button>
+      ${placeOf(w.lieu) ? `<span class="place-pill" title="Lieu de rangement">${ICON_PIN}${esc(placeOf(w.lieu).name)}</span>` : ""}
       ${w.commentaire ? `<div class="comment">${esc(w.commentaire)}</div>` : ""}
     </div>
     <div class="qty">
@@ -372,7 +387,7 @@ function setFiltersHidden(hidden) {
   updateFiltersBadge();
 }
 function updateFiltersBadge() {
-  const n = (activeCat !== "Toutes") + (activeStore !== "all") + $("#show-empty").checked;
+  const n = (activeCat !== "Toutes") + (activeStore !== "all") + (activePlace !== "all") + $("#show-empty").checked;
   const badge = $("#filters-badge");
   badge.textContent = n;
   badge.hidden = !n || !$("#cave-filters").hidden;
@@ -407,6 +422,32 @@ let pendingTasting = null; // fiche de dégustation de la fiche en cours d'édit
 let formDirty = false; // modifications non enregistrées (avant de changer d'onglet millésime)
 form.addEventListener("input", () => (formDirty = true));
 
+// ---------- Lieux de rangement ----------
+const placeOf = (id) => (id ? (state.locations || []).find((p) => p.id === id) : null);
+const placeByName = (name) => (state.locations || []).find((p) => norm(p.name) === norm(name));
+const NEW_PLACE = "__new__";
+
+function fillPlaceSelect(selected) {
+  const places = [...(state.locations || [])].sort((a, b) => a.name.localeCompare(b.name, "fr"));
+  form.lieu.innerHTML = `<option value="">— Non précisé —</option>` +
+    places.map((p) => `<option value="${p.id}" ${p.id === selected ? "selected" : ""}>${esc(p.name)}</option>`).join("") +
+    `<option value="${NEW_PLACE}">+ Nouveau lieu…</option>`;
+  form.lieu.dataset.prev = form.lieu.value;
+}
+
+// « + Nouveau lieu… » dans la liste : création à la volée, sans quitter la fiche.
+$("#lieu-select").onchange = (e) => {
+  const sel = e.target;
+  if (sel.value !== NEW_PLACE) {
+    sel.dataset.prev = sel.value;
+    return;
+  }
+  const name = prompt("Nom du nouveau lieu de rangement :")?.trim();
+  const p = name ? addPlace(name) : null;
+  fillPlaceSelect(p ? p.id : sel.dataset.prev);
+  if (p) formDirty = true;
+};
+
 function fillCategorySelect(selected) {
   form.category.innerHTML = state.categories
     .map((c) => `<option ${c.name === selected ? "selected" : ""}>${esc(c.name)}</option>`)
@@ -424,6 +465,7 @@ function resetForm() {
   form.reset();
   form.id.value = "";
   fillCategorySelect(activeCat !== "Toutes" ? activeCat : "Rouge");
+  fillPlaceSelect(activePlace !== "all" && activePlace !== "none" ? activePlace : "");
   const used = state.wines.map((w) => (w.region || "").trim()).filter(Boolean);
   $("#region-list").innerHTML = [...new Set([...used, ...REGIONS])]
     .sort((a, b) => a.localeCompare(b, "fr")).map((r) => `<option value="${esc(r)}">`).join("");
@@ -458,6 +500,7 @@ function editWine(id) {
     form[k].value = w[k] ?? "";
   }
   form.auFrais.checked = Boolean(w.auFrais);
+  fillPlaceSelect(w.lieu);
   setQty(w.quantity || 0);
   $("#qty-label").firstChild.textContent = "Bouteilles en cave";
   pendingPhotos = [...photosOf(w)];
@@ -515,6 +558,7 @@ function newVintage() {
   fillCategorySelect(base.category);
   for (const k of ["cuvee", "domaine", "region", "appellation", "cepages"]) form[k].value = base[k] ?? "";
   form.auFrais.checked = Boolean(base.auFrais);
+  fillPlaceSelect(base.lieu);
   vintageBase = base;
   renderVintageTabs(null, true);
   $("#btn-cancel").hidden = false;
@@ -531,6 +575,7 @@ function readForm() {
     region: form.region.value.trim(),
     appellation: form.appellation.value.trim(),
     auFrais: form.auFrais.checked,
+    lieu: placeOf(form.lieu.value) ? form.lieu.value : "",
     cepages: form.cepages.value.trim(),
     millesime: num(form.millesime.value),
     boireDe: num(form.boireDe.value),
@@ -571,6 +616,7 @@ form.onsubmit = (e) => {
         same.commentaire = [same.commentaire, data.commentaire].filter(Boolean).join("\n");
       }
       setPhotos(same, [...photosOf(same), ...pendingPhotos]);
+      if (data.lieu) same.lieu = data.lieu;
       if (pendingTasting) setTasting(same, pendingTasting);
       toast(`+${data.quantity} ajoutée(s) à la fiche existante`);
     } else {
@@ -1192,6 +1238,7 @@ function renderSettings() {
     : "La clé reste stockée uniquement sur ce téléphone.";
   $("#ai-provider").value = provider();
   showProviderKey(provider());
+  renderPlaces();
   $("#cat-list").innerHTML = state.categories
     .map((c, i) => {
       const n = state.wines.filter((w) => w.category === c.name).length;
@@ -1205,6 +1252,58 @@ function renderSettings() {
     renderSettings();
   }));
 }
+
+function renderPlaces() {
+  const places = state.locations || [];
+  $("#place-list").innerHTML = places.length ? places.map((p) => {
+    const n = bottles(state.wines.filter((w) => w.lieu === p.id));
+    return `<li><button type="button" class="place-name" data-rename="${p.id}">${ICON_PIN} ${esc(p.name)} <span class="muted small">· ${n} bouteille${n > 1 ? "s" : ""}</span></button>
+      <button data-del-place="${p.id}" aria-label="Supprimer le lieu ${esc(p.name)}">✕</button></li>`;
+  }).join("") : `<li class="muted small">Aucun lieu pour l'instant.</li>`;
+  $("#place-list").querySelectorAll("[data-rename]").forEach((b) => (b.onclick = () => {
+    const p = placeOf(b.dataset.rename);
+    const name = prompt("Nouveau nom du lieu :", p.name)?.trim();
+    if (!name || name === p.name) return;
+    if (placeByName(name)) return toast("Ce lieu existe déjà.");
+    p.name = name;
+    save();
+    render();
+  }));
+  $("#place-list").querySelectorAll("[data-del-place]").forEach((b) => (b.onclick = () => {
+    const p = placeOf(b.dataset.delPlace);
+    const inside = state.wines.filter((w) => w.lieu === p.id);
+    if (!confirm(inside.length
+      ? `Supprimer « ${p.name} » ? Ses ${inside.length} fiche(s) passeront en « lieu non précisé ».`
+      : `Supprimer le lieu « ${p.name} » ?`)) return;
+    inside.forEach((w) => delete w.lieu);
+    state.locations = state.locations.filter((x) => x.id !== p.id);
+    save();
+    render();
+    toast(`Lieu « ${p.name} » supprimé`);
+  }));
+}
+
+function addPlace(name) {
+  name = name.trim();
+  if (!name) return null;
+  const existing = placeByName(name);
+  if (existing) return existing;
+  const p = { id: uid(), name };
+  (state.locations ??= []).push(p);
+  save();
+  return p;
+}
+
+$("#btn-add-place").onclick = () => {
+  const name = $("#new-place").value.trim();
+  if (!name) return;
+  if (placeByName(name)) return toast("Ce lieu existe déjà.");
+  addPlace(name);
+  $("#new-place").value = "";
+  render();
+  toast(`Lieu « ${name} » ajouté`);
+};
+$("#new-place").onkeydown = (e) => e.key === "Enter" && $("#btn-add-place").click();
 
 function showProviderKey(p) {
   $("#api-key").value = keyFor(p);

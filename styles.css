@@ -447,6 +447,10 @@ legend { font-weight: 600; padding: 0 4px; }
   border: 1px solid var(--border); background: transparent; color: var(--muted);
 }
 .store-pill .ico { width: 12px; height: 12px; }
+.place-pill { display: inline-flex; align-items: center; gap: 3px; margin: 4px 0 0 4px; font-size: .75rem; font-weight: 600; color: var(--muted); vertical-align: middle; }
+.place-pill .ico { width: 12px; height: 12px; }
+.cat-list .place-name { display: inline-flex; align-items: center; gap: 4px; background: none; border: 0; padding: 0; font: inherit; color: var(--text); text-align: left; cursor: pointer; }
+.cat-list .place-name .ico { color: var(--primary); }
 .store-pill.frais { border-color: #5b8db8; color: #3d6f9a; background: rgba(91,141,184,.12); }
 @media (prefers-color-scheme: dark) { .store-pill.frais { color: #9cc3e6; } }
 #store-filter { padding-top: 0; }
