@@ -357,12 +357,12 @@ function changeQty(w, delta, undo = false) {
 
 $("#show-empty").onchange = renderCave;
 
-// Filtres repliables (choix mémorisé) ; une pastille indique les filtres actifs quand ils sont masqués.
+// Filtres repliables, masqués par défaut (choix mémorisé) ; une pastille indique les filtres actifs quand ils sont masqués.
 const FILTERS_KEY = "macave.filtersHidden";
 function setFiltersHidden(hidden) {
   $("#cave-filters").hidden = hidden;
   $("#filters-toggle").setAttribute("aria-expanded", String(!hidden));
-  try { localStorage.setItem(FILTERS_KEY, hidden ? "1" : ""); } catch {}
+  try { localStorage.setItem(FILTERS_KEY, hidden ? "1" : "0"); } catch {}
   updateFiltersBadge();
 }
 function updateFiltersBadge() {
@@ -374,7 +374,9 @@ function updateFiltersBadge() {
     ? `Afficher les filtres${n ? ` (${n} actif${n > 1 ? "s" : ""})` : ""}` : "Masquer les filtres";
 }
 $("#filters-toggle").onclick = () => setFiltersHidden(!$("#cave-filters").hidden);
-try { setFiltersHidden(localStorage.getItem(FILTERS_KEY) === "1"); } catch { setFiltersHidden(false); }
+let filtersShown = false;
+try { filtersShown = localStorage.getItem(FILTERS_KEY) === "0"; } catch {}
+setFiltersHidden(!filtersShown);
 
 // Recherche : tous les mots doivent apparaître (sans tenir compte des accents ni des majuscules).
 function norm(s) {
