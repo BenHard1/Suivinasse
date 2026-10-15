@@ -202,7 +202,20 @@ legend { font-weight: 600; padding: 0 4px; }
 .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
 .btn-small { padding: 6px 12px; font-size: .9rem; }
 
-.search-bar { position: relative; margin-bottom: 6px; }
+.search-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+.search-bar { position: relative; flex: 1; min-width: 0; }
+.filters-toggle {
+  position: relative; flex: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); cursor: pointer; padding: 0;
+}
+.filters-toggle[aria-expanded="true"] { background: var(--primary); color: var(--primary-text); border-color: var(--primary); }
+.filters-toggle .ico { width: 22px; height: 22px; }
+.filters-badge {
+  position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px;
+  background: var(--wine, var(--primary)); color: #fff; font-size: .7rem; font-weight: 700; line-height: 18px; text-align: center;
+}
+.filters-badge[hidden] { display: none; }
+#cave-filters[hidden] { display: none; }
 .search-bar > .ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
 .search-bar input { margin: 0; padding-left: 38px; padding-right: 40px; }
 .search-bar input::-webkit-search-cancel-button { -webkit-appearance: none; }

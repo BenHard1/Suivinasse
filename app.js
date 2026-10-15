@@ -271,6 +271,7 @@ function renderCave() {
     return true;
   });
 
+  updateFiltersBadge();
   const el = $("#cave-list");
   if (!list.length) {
     el.innerHTML = state.wines.length
@@ -355,6 +356,25 @@ function changeQty(w, delta, undo = false) {
 }
 
 $("#show-empty").onchange = renderCave;
+
+// Filtres repliables (choix mémorisé) ; une pastille indique les filtres actifs quand ils sont masqués.
+const FILTERS_KEY = "macave.filtersHidden";
+function setFiltersHidden(hidden) {
+  $("#cave-filters").hidden = hidden;
+  $("#filters-toggle").setAttribute("aria-expanded", String(!hidden));
+  try { localStorage.setItem(FILTERS_KEY, hidden ? "1" : ""); } catch {}
+  updateFiltersBadge();
+}
+function updateFiltersBadge() {
+  const n = (activeCat !== "Toutes") + (activeStore !== "all") + $("#show-empty").checked;
+  const badge = $("#filters-badge");
+  badge.textContent = n;
+  badge.hidden = !n || !$("#cave-filters").hidden;
+  $("#filters-toggle").title = $("#cave-filters").hidden
+    ? `Afficher les filtres${n ? ` (${n} actif${n > 1 ? "s" : ""})` : ""}` : "Masquer les filtres";
+}
+$("#filters-toggle").onclick = () => setFiltersHidden(!$("#cave-filters").hidden);
+try { setFiltersHidden(localStorage.getItem(FILTERS_KEY) === "1"); } catch { setFiltersHidden(false); }
 
 // Recherche : tous les mots doivent apparaître (sans tenir compte des accents ni des majuscules).
 function norm(s) {
