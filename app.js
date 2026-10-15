@@ -1303,7 +1303,9 @@ $("#btn-add-place").onclick = () => {
   render();
   toast(`Lieu « ${name} » ajouté`);
 };
-$("#new-place").onkeydown = (e) => e.key === "Enter" && $("#btn-add-place").click();
+$("#new-place").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") $("#btn-add-place").click();
+});
 
 function showProviderKey(p) {
   $("#api-key").value = keyFor(p);
