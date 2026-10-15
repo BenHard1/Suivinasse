@@ -542,6 +542,18 @@ legend { font-weight: 600; padding: 0 4px; }
 .producer-site .site-edit input { margin: 0; flex: 1; min-width: 0; }
 .site-link { display: inline-flex; align-items: center; gap: 4px; }
 .region-tabs { margin: 2px 0 6px; }
+/* Liste de suggestions sous le champ Appellation */
+.suggest-wrap { position: relative; }
+.suggest {
+  position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 4px); margin: 0; padding: 4px 0; list-style: none;
+  max-height: 264px; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+}
+.suggest li { padding: 9px 12px; cursor: pointer; font-weight: 400; line-height: 1.3; }
+.suggest li + li { border-top: 1px solid var(--border); }
+.suggest li.active, .suggest li:hover { background: var(--bg); }
+.suggest li mark { background: none; color: var(--primary); font-weight: 700; }
+.suggest li .s-sub { display: block; font-size: .78rem; color: var(--muted); }
 .ref-hint { margin: -4px 0 12px; padding: 8px 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); font-size: .85rem; }
 .ref-hint b { color: var(--primary); }
 .ref-hint .muted { display: block; margin-top: 2px; }

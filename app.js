@@ -2,7 +2,7 @@ import { recognizeLabel, estimateWindow, pairWines, tastingSheet, findProducerSi
 import * as store from "./storage.js";
 import { putPhoto, photoUrl, deletePhotos, syncPhotos, onPhotoError } from "./photos.js";
 import { rankForMeal, PROFILE_LABELS } from "./pairing.js";
-import { findReference, referenceWindow, APPELLATIONS, COLOR_LABELS } from "./vins.js";
+import { findReference, referenceWindow, REFERENCE, COLOR_LABELS } from "./vins.js";
 
 // ---------- Stockage ----------
 const PROVIDER_KEY = "macave.provider";
@@ -486,7 +486,120 @@ $("#lieu-select").onchange = (e) => {
 // L'appellation (ou la cuvée, la région, les cépages) est comparée au référentiel : la fenêtre de
 // dégustation et les cépages sont proposés automatiquement dans les champs vides, sans appel à l'IA.
 // Une valeur saisie à la main n'est jamais remplacée.
-$("#appellation-list").innerHTML = APPELLATIONS.map((a) => `<option value="${esc(a)}">`).join("");
+// Suggestions d'appellations sous le champ : filtrées à chaque lettre, sans tenir compte des accents
+// ni des tirets ; si rien ne correspond, la saisie est raccourcie par la fin (« Bourge » → « Bourg »).
+const APP_SUGGEST = (() => {
+  const m = new Map();
+  for (const r of REFERENCE) {
+    if (r.regionOnly) continue;
+    const e = m.get(r.name) || { name: r.name, regions: new Set(), colors: new Set() };
+    e.regions.add(r.region);
+    e.colors.add(COLOR_LABELS[r.color]);
+    m.set(r.name, e);
+  }
+  return [...m.values()].map((e) => ({ ...e, key: suggestNorm(e.name) }));
+})();
+function suggestNorm(s) {
+  return String(s ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ");
+}
+
+const appInput = form.appellation;
+const appList = $("#app-suggest");
+let appItems = [];
+let appActive = -1;
+
+// Abréviations courantes : « st » / « ste » pour Saint / Sainte.
+const expandQuery = (q) => q.replace(/(^| )st( |$)/g, "$1saint$2").replace(/(^| )ste( |$)/g, "$1sainte$2");
+
+function suggestMatches(q) {
+  q = expandQuery(q);
+  for (let n = q.length; n >= Math.min(3, q.length); n--) {
+    const part = q.slice(0, n).trim();
+    if (!part) break;
+    // Plusieurs mots : chacun doit figurer dans le nom (« cote rot », « saint emil »…).
+    const words = part.split(" ").filter(Boolean);
+    const found = APP_SUGGEST.filter((e) => words.every((w) => e.key.includes(w)));
+    if (found.length) {
+      const rank = (e) => (e.key.startsWith(part) ? 0 : e.key.includes(` ${part}`) ? 1 : e.key.includes(part) ? 2 : 3);
+      found.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, "fr"));
+      return { words, found: found.slice(0, 30) };
+    }
+  }
+  return { words: [], found: [] };
+}
+
+// Met en évidence les mots trouvés dans le nom (positions calculées sur le texte sans accents).
+function highlight(name, words) {
+  const plain = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, " ");
+  if (plain.length !== name.length) return esc(name);
+  const marked = new Array(name.length).fill(false);
+  for (const w of words) {
+    const i = plain.indexOf(w);
+    if (i >= 0) for (let k = i; k < i + w.length; k++) marked[k] = true;
+  }
+  let html = "";
+  for (let k = 0; k < name.length; k++) {
+    if (marked[k] && !marked[k - 1]) html += "<mark>";
+    html += esc(name[k]);
+    if (marked[k] && !marked[k + 1]) html += "</mark>";
+  }
+  return html;
+}
+
+function closeSuggest() {
+  appList.hidden = true;
+  appList.innerHTML = "";
+  appItems = [];
+  appActive = -1;
+  appInput.setAttribute("aria-expanded", "false");
+}
+
+function openSuggest() {
+  const q = suggestNorm(appInput.value).trim();
+  if (q.length < 2) return closeSuggest();
+  const { words, found } = suggestMatches(q);
+  if (!found.length || (found.length === 1 && found[0].key.trim() === q)) return closeSuggest();
+  appItems = found;
+  appActive = -1;
+  appList.innerHTML = found.map((e, i) => `<li role="option" id="app-opt-${i}" data-i="${i}">${highlight(e.name, words)}` +
+    `<span class="s-sub">${esc([...e.regions].join(", "))} · ${esc([...e.colors].join(", "))}</span></li>`).join("");
+  appList.hidden = false;
+  appInput.setAttribute("aria-expanded", "true");
+}
+
+function pickSuggest(i) {
+  const e = appItems[i];
+  if (!e) return;
+  appInput.value = e.name;
+  closeSuggest();
+  formDirty = true;
+  updateReference();
+}
+
+appInput.addEventListener("input", openSuggest);
+appInput.addEventListener("focus", openSuggest);
+appInput.addEventListener("blur", () => setTimeout(closeSuggest, 150));
+appInput.addEventListener("keydown", (e) => {
+  if (appList.hidden) return;
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    appActive = (appActive + (e.key === "ArrowDown" ? 1 : -1) + appItems.length) % appItems.length;
+    appList.querySelectorAll("li").forEach((li, i) => li.classList.toggle("active", i === appActive));
+    appList.children[appActive]?.scrollIntoView({ block: "nearest" });
+  } else if (e.key === "Enter" && appActive >= 0) {
+    e.preventDefault();
+    pickSuggest(appActive);
+  } else if (e.key === "Escape") {
+    closeSuggest();
+  }
+});
+// pointerdown (avant la perte du focus) : le choix est pris en compte même sur téléphone.
+appList.addEventListener("pointerdown", (e) => {
+  const li = e.target.closest("li");
+  if (!li) return;
+  e.preventDefault();
+  pickSuggest(+li.dataset.i);
+});
 
 function setAuto(field, value) {
   const el = form[field];

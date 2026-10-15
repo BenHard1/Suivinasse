@@ -120,8 +120,11 @@
           <datalist id="region-list"></datalist>
         </label>
         <label>Appellation <span class="muted">(facultatif)</span>
-          <input name="appellation" list="appellation-list" placeholder="ex : Chablis Grand Cru" autocomplete="off">
-          <datalist id="appellation-list"></datalist>
+          <div class="suggest-wrap">
+            <input name="appellation" placeholder="ex : Chablis Grand Cru" autocomplete="off" autocapitalize="off" spellcheck="false"
+              role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="app-suggest">
+            <ul id="app-suggest" class="suggest" role="listbox" hidden></ul>
+          </div>
         </label>
         <div id="ref-hint" class="ref-hint" hidden></div>
         <label>Cépages

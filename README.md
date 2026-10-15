@@ -46,7 +46,7 @@ Chaque ami crée son compte depuis l'écran de connexion et a sa propre cave. Po
 
 Le fichier [`vins.js`](vins.js) contient un **référentiel de plus de 300 appellations (370 lignes appellation × couleur)** (France détaillée par appellation et couleur, plus Italie, Espagne, Portugal, Allemagne, Autriche, Suisse, Hongrie, Nouveau monde, Liban, Grèce), avec pour chacune la fenêtre de garde habituelle (en années après le millésime), les cépages, le profil aromatique et le style du vin. Il fonctionne sans IA :
 
-- **À la saisie**, dès que l'appellation (proposée en liste), la cuvée, la région ou les cépages correspondent, la fiche affiche la référence et remplit les champs vides : fenêtre de dégustation, cépages, région. Une valeur saisie à la main n'est jamais remplacée.
+- **À la saisie**, l'appellation se choisit dans une liste filtrée à chaque lettre (sans accents ni tirets, « st » pour Saint, plusieurs mots possibles, saisie raccourcie si rien ne correspond : « Bourge » propose Bourgueil, Saint-Nicolas-de-Bourgueil…) ; dès que l'appellation, la cuvée, la région ou les cépages correspondent, la fiche affiche la référence et remplit les champs vides : fenêtre de dégustation, cépages, région. Une valeur saisie à la main n'est jamais remplacée.
 - **Mentions** : Grand cru, Premier cru, Cru classé, Vieilles vignes allongent la garde ; Vendanges tardives, moelleux, Gran Reserva, Vintage… renvoient à leur propre ligne.
 - **Vins sans millésime** (champagne brut sans année, crémants, porto ruby / tawny, xérès…) : la fenêtre part de l'année d'entrée en cave.
 - **Photo d'étiquette** : si l'appellation lue par l'IA est connue, la fenêtre du référentiel remplace l'estimation de l'IA, pour des valeurs cohérentes d'une bouteille à l'autre.
