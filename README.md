@@ -6,6 +6,7 @@ Web app (PWA) installable sur l'écran d'accueil du téléphone pour gérer sa c
 
 - **Cave** : bouteilles classées par couleur/catégorie (Rouge, Blanc, Rosé, Champagne, Porto, Whiskey, Rhum, Absinthe + catégories personnalisées) puis par région, filtre **Au frais / En carton** (rangement modifiable d'un geste sur chaque fiche), boutons **+ / −** pour ajouter ou retirer une bouteille bue (avec « Annuler »).
 - **Ajouter** (bouton **+** en bas à droite de la page Cave) : fiche avec cuvée, domaine, région, appellation, cépages, millésime, fenêtre de dégustation, rangement « au frais », commentaire, et **nombre de bouteilles rentrées** (1, 3, 6, 12 ou libre). Si la même cuvée/millésime existe déjà, les bouteilles sont ajoutées à la fiche existante.
+- **Photos de la bouteille** : jusqu'à 6 photos par fiche (étiquette, contre-étiquette, capsule…), prises à l'appareil ou choisies dans la galerie ; un appui sur la miniature de la cave les affiche en plein écran (glisser pour passer de l'une à l'autre).
 - **Reconnaissance photo** : photographiez l'étiquette ou choisissez une photo de la galerie, l'IA (Gemini ou Claude) pré-remplit la fiche et estime la fenêtre de dégustation.
 - **Maturité** : liste des vins à maturité, triés par urgence (apogée dépassée → à boire rapidement → à maturité).
 - **Accords mets & vins** : décrivez le repas ; des **suggestions immédiates** (sans IA, calculées sur le téléphone à partir de mots-clés du repas, du style de chaque vin et de sa maturité) s'affichent aussitôt, puis **l'avis du sommelier IA** (3 bouteilles maximum, avec explication et service) sur une présélection des 25 bouteilles les plus pertinentes. Recherche internet en option (plus lente), délai maximal pour ne jamais rester bloqué.
@@ -16,10 +17,10 @@ Web app (PWA) installable sur l'écran d'accueil du téléphone pour gérer sa c
 
 | Donnée | Avec comptes (Supabase configuré) | Sans compte |
 |---|---|---|
-| Cave (fiches, quantités, commentaires, miniatures photo, catégories) | Base de données Supabase, une ligne par compte, protégée par des règles RLS (chaque compte ne lit/écrit que sa cave) + copie locale pour le hors-ligne | Navigateur du téléphone uniquement (`localStorage`) |
+| Cave (fiches, quantités, commentaires, photos, catégories) | Base de données Supabase, une ligne par compte, protégée par des règles RLS (chaque compte ne lit/écrit que sa cave) + copie locale pour le hors-ligne | Navigateur du téléphone uniquement (`localStorage`) |
 | Mot de passe | Géré par Supabase Auth (haché, jamais visible) | — |
 | Clé API (Gemini ou Claude) | Dans le compte (métadonnées Supabase Auth, lisibles uniquement par l'utilisateur connecté) — retrouvée sur tous ses appareils, jamais incluse dans les exports | Navigateur du téléphone uniquement |
-| Photos d'étiquette | Envoyées au moteur IA choisi le temps de l'analyse ; seule une miniature 160 px est gardée dans la fiche | idem |
+| Photos de la bouteille | Jusqu'à 6 par fiche, réduites à 480 px et gardées dans la cave ; la photo d'étiquette est envoyée au moteur IA choisi le temps de l'analyse | idem |
 
 Avec un compte, la cave suit l'utilisateur sur tous ses appareils ; hors ligne, les modifications sont gardées puis envoyées au retour du réseau.
 

@@ -71,7 +71,15 @@
         <input id="photo-input" type="file" accept="image/*" capture="environment" hidden>
         <input id="gallery-input" type="file" accept="image/*" hidden>
         <div id="photo-status" class="muted small"></div>
-        <img id="photo-preview" alt="" hidden>
+      </div>
+
+      <div class="photos-box">
+        <p class="photo-title">Photos de la bouteille <span id="photos-count" class="muted small"></span></p>
+        <div class="photo-grid">
+          <div id="photo-grid" class="photo-grid-items"></div>
+          <label id="add-photos" class="ph ph-add" for="bottle-photos-input" aria-label="Ajouter des photos"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></label>
+        </div>
+        <input id="bottle-photos-input" type="file" accept="image/*" multiple hidden>
       </div>
 
       <form id="wine-form" autocomplete="off">
@@ -233,6 +241,12 @@
   <!-- Hors de la zone défilante pour rester en place ; visible uniquement sur la page Cave. -->
   <button id="fab-add" class="fab" aria-label="Ajouter des bouteilles"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
   <div id="toast" class="toast" hidden></div>
+  <div id="photo-viewer" class="photo-viewer" hidden>
+    <img id="viewer-img" alt="">
+    <button id="viewer-prev" class="viewer-nav prev" aria-label="Photo précédente">‹</button>
+    <button id="viewer-next" class="viewer-nav next" aria-label="Photo suivante">›</button>
+    <span id="viewer-pos" class="viewer-pos"></span>
+  </div>
 
   <script type="module" src="app.js"></script>
 </body>

@@ -33,9 +33,16 @@ function readCache(key) {
   return null;
 }
 
+// Retourne false si la mémoire du navigateur est pleine (photos nombreuses).
 function writeCache(state) {
-  localStorage.setItem(cacheKey(), JSON.stringify(state));
-  if (user) localStorage.setItem(`${cacheKey()}.meta`, JSON.stringify({ dirty, lastSynced }));
+  try {
+    localStorage.setItem(cacheKey(), JSON.stringify(state));
+    if (user) localStorage.setItem(`${cacheKey()}.meta`, JSON.stringify({ dirty, lastSynced }));
+    return true;
+  } catch (err) {
+    console.warn("Copie locale impossible", err);
+    return false;
+  }
 }
 
 // ---------- Authentification ----------
@@ -203,8 +210,9 @@ async function push(state) {
 
 export function save(state) {
   if (user) dirty = true;
-  writeCache(state);
+  const cached = writeCache(state);
   if (user) schedulePush(state);
+  else if (!cached) throw new Error("Mémoire du téléphone pleine : supprimez quelques photos pour enregistrer.");
 }
 
 export async function flush() {
