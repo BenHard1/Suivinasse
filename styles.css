@@ -194,6 +194,15 @@ legend { font-weight: 600; padding: 0 4px; }
 .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
 .btn-small { padding: 6px 12px; font-size: .9rem; }
 
+.search-bar { position: relative; margin-bottom: 6px; }
+.search-bar > .ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.search-bar input { margin: 0; padding-left: 38px; padding-right: 40px; }
+.search-bar input::-webkit-search-cancel-button { -webkit-appearance: none; }
+#cave-search-clear {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 0;
+  border-radius: 50%; background: none; color: var(--muted); font-size: 1.3rem; line-height: 1;
+}
+#cave-search-clear[hidden] { display: none; }
 .chips { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 8px; scrollbar-width: none; }
 .chip {
   flex: none; border: 1px solid var(--border); background: var(--surface); color: var(--text);

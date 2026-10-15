@@ -54,6 +54,11 @@
   <main>
     <!-- CAVE -->
     <section id="view-cave" class="view active">
+      <div class="search-bar">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+        <input id="cave-search" type="search" placeholder="Rechercher une cuvée, un domaine, un cépage…" autocomplete="off" enterkeyhint="search" aria-label="Rechercher dans la cave">
+        <button type="button" id="cave-search-clear" aria-label="Effacer la recherche" hidden>×</button>
+      </div>
       <div id="cat-filter" class="chips"></div>
       <div id="store-filter" class="chips"></div>
       <label class="toggle"><input type="checkbox" id="show-empty"> Afficher les bouteilles épuisées</label>

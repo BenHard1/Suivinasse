@@ -195,7 +195,12 @@ function renderCave() {
   ], activeStore, "store");
   $("#store-filter").querySelectorAll(".chip").forEach((c) => (c.onclick = () => { activeStore = c.dataset.store; renderCave(); }));
 
+  const terms = norm($("#cave-search").value).split(/\s+/).filter(Boolean);
   const list = inCat.filter((w) => {
+    if (terms.length) {
+      const text = norm([w.cuvee, w.domaine, w.region, w.appellation, w.cepages, w.millesime, w.category, w.commentaire].join(" "));
+      if (!terms.every((t) => text.includes(t))) return false;
+    }
     if (!showEmpty && !w.quantity) return false;
     if (activeStore === "frais" && !w.auFrais) return false;
     if (activeStore === "carton" && w.auFrais) return false;
@@ -286,6 +291,22 @@ function changeQty(w, delta, undo = false) {
 }
 
 $("#show-empty").onchange = renderCave;
+
+// Recherche : tous les mots doivent apparaître (sans tenir compte des accents ni des majuscules).
+function norm(s) {
+  return String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+const searchInput = $("#cave-search");
+searchInput.oninput = () => {
+  $("#cave-search-clear").hidden = !searchInput.value;
+  renderCave();
+};
+$("#cave-search-clear").onclick = () => {
+  searchInput.value = "";
+  $("#cave-search-clear").hidden = true;
+  renderCave();
+  searchInput.focus();
+};
 
 // ---------- Formulaire ----------
 const form = $("#wine-form");
