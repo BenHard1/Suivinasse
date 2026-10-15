@@ -492,9 +492,10 @@ const APP_SUGGEST = (() => {
   const m = new Map();
   for (const r of REFERENCE) {
     if (r.regionOnly) continue;
-    const e = m.get(r.name) || { name: r.name, regions: new Set(), colors: new Set() };
+    const e = m.get(r.name) || { name: r.name, regions: new Set(), colors: new Set(), codes: [] };
     e.regions.add(r.region);
     e.colors.add(COLOR_LABELS[r.color]);
+    if (!e.codes.includes(r.color)) e.codes.push(r.color);
     m.set(r.name, e);
   }
   return [...m.values()].map((e) => ({ ...e, key: suggestNorm(e.name) }));
@@ -558,7 +559,7 @@ function openSuggest() {
   const q = suggestNorm(appInput.value).trim();
   if (q.length < 2) return closeSuggest();
   const { words, found } = suggestMatches(q);
-  if (!found.length || (found.length === 1 && found[0].key.trim() === q)) return closeSuggest();
+  if (!found.length) return closeSuggest();
   appItems = found;
   appActive = -1;
   appList.innerHTML = found.map((e, i) => `<li role="option" id="app-opt-${i}" data-i="${i}">${highlight(e.name, words)}` +
@@ -567,16 +568,47 @@ function openSuggest() {
   appInput.setAttribute("aria-expanded", "true");
 }
 
+// Catégorie de la cave correspondant à une couleur du référentiel (selon les catégories existantes).
+function categoryForColor(code, appellation) {
+  const find = (...words) => state.categories.find((c) => c.kind !== "spiritueux" && words.some((w) => norm(c.name).includes(w)))?.name;
+  const a = norm(appellation);
+  switch (code) {
+    case "R": return find("rouge");
+    case "B": return find("blanc");
+    case "RS": return find("rose");
+    case "E": return (a.includes("champagne") && find("champagne")) || find("efferv", "cremant", "petillant", "bulle", "champagne") || find("blanc");
+    case "L": return find("liquoreux", "moelleux") || find("blanc");
+    case "M": return find("porto", "mute", "doux naturel", "vdn") || find("liquoreux") || find("rouge");
+    default: return null;
+  }
+}
+
+// Choix d'une appellation dans la liste : catégorie (rouge, blanc…), région, cépages et fenêtre de
+// dégustation suivent automatiquement.
 function pickSuggest(i) {
   const e = appItems[i];
   if (!e) return;
   appInput.value = e.name;
   closeSuggest();
+  applyAppellation(e);
+}
+
+function applyAppellation(e) {
   formDirty = true;
+  // Couleur : on garde la catégorie actuelle si l'appellation existe dans cette couleur, sinon la première.
+  const current = e.codes.find((c) => categoryForColor(c, e.name) === form.category.value);
+  const cat = current ? form.category.value : categoryForColor(e.codes[0], e.name);
+  if (cat && cat !== form.category.value) fillCategorySelect(cat);
+  for (const f of ["region", "cepages", "boireDe", "boireJusqua"]) form[f].dataset.auto = "1";
   updateReference();
 }
 
 appInput.addEventListener("input", openSuggest);
+// Nom complet tapé sans passer par la liste : même mise à jour qu'un choix dans la liste.
+appInput.addEventListener("change", () => {
+  const e = APP_SUGGEST.find((x) => x.key.trim() === suggestNorm(appInput.value).trim());
+  if (e) applyAppellation(e);
+});
 appInput.addEventListener("focus", openSuggest);
 appInput.addEventListener("blur", () => setTimeout(closeSuggest, 150));
 appInput.addEventListener("keydown", (e) => {
@@ -624,6 +656,9 @@ function updateReference() {
   if (win) {
     setAuto("boireDe", win.de);
     setAuto("boireJusqua", win.ja);
+  } else {
+    // Pas encore de millésime : on retire les dates proposées pour une autre appellation.
+    for (const f of ["boireDe", "boireJusqua"]) if (form[f].dataset.auto) setAuto(f, "");
   }
   setAuto("cepages", r.cepages);
   setAuto("region", r.region);
