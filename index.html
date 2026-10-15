@@ -142,6 +142,17 @@
           <span>Au frais <span class="muted small">(rangée en cave à vin — décoché : en carton)</span></span>
         </label>
 
+        <fieldset>
+          <legend>Fiche de dégustation</legend>
+          <div id="tasting-sheet" class="tasting-sheet" hidden></div>
+          <div class="tasting-actions">
+            <button type="button" id="btn-tasting" class="btn btn-ghost btn-small"><svg class="ico ico-inline" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>Générer avec recherche en ligne</span></button>
+            <button type="button" id="btn-tasting-clear" class="btn btn-ghost btn-small" hidden>Effacer</button>
+          </div>
+          <div id="tasting-status" class="small"></div>
+          <p class="muted small">L'IA (clé des Réglages) cherche en ligne robe, nez, bouche, accords et potentiel de garde de cette cuvée.</p>
+        </fieldset>
+
         <label>Commentaire
           <textarea name="commentaire" rows="3" placeholder="Notes de dégustation, prix, lieu d'achat, occasion…"></textarea>
         </label>

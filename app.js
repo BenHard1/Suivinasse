@@ -1,4 +1,4 @@
-import { recognizeLabel, estimateWindow, pairWines, PROVIDERS } from "./ai.js";
+import { recognizeLabel, estimateWindow, pairWines, tastingSheet, PROVIDERS } from "./ai.js";
 import * as store from "./storage.js";
 import { rankForMeal, PROFILE_LABELS } from "./pairing.js";
 
@@ -290,6 +290,7 @@ $("#show-empty").onchange = renderCave;
 // ---------- Formulaire ----------
 const form = $("#wine-form");
 let pendingPhotos = []; // photos de la fiche en cours d'édition
+let pendingTasting = null; // fiche de dégustation de la fiche en cours d'édition
 let formDirty = false; // modifications non enregistrées (avant de changer d'onglet millésime)
 form.addEventListener("input", () => (formDirty = true));
 
@@ -316,6 +317,9 @@ function resetForm() {
   setQty(6);
   pendingPhotos = [];
   renderPhotos();
+  pendingTasting = null;
+  renderTasting();
+  $("#tasting-status").textContent = "";
   formDirty = false;
   vintageBase = null;
   renderVintageTabs();
@@ -341,6 +345,8 @@ function editWine(id) {
   $("#qty-label").firstChild.textContent = "Bouteilles en cave";
   pendingPhotos = [...photosOf(w)];
   renderPhotos();
+  pendingTasting = w.degustation ?? null;
+  renderTasting();
   vintageBase = w;
   renderVintageTabs(w.id);
   $("#btn-cancel").hidden = false;
@@ -430,6 +436,7 @@ form.onsubmit = (e) => {
     const delta = data.quantity - (w.quantity || 0);
     Object.assign(w, data);
     setPhotos(w, pendingPhotos);
+    setTasting(w, pendingTasting);
     if (delta) (w.history ??= []).push({ date: new Date().toISOString(), delta });
     toast("Fiche mise à jour");
   } else {
@@ -445,6 +452,7 @@ form.onsubmit = (e) => {
         same.commentaire = [same.commentaire, data.commentaire].filter(Boolean).join("\n");
       }
       setPhotos(same, [...photosOf(same), ...pendingPhotos]);
+      if (pendingTasting) setTasting(same, pendingTasting);
       toast(`+${data.quantity} ajoutée(s) à la fiche existante`);
     } else {
       const w = {
@@ -452,6 +460,7 @@ form.onsubmit = (e) => {
         history: [{ date: new Date().toISOString(), delta: data.quantity }],
       };
       setPhotos(w, pendingPhotos);
+      setTasting(w, pendingTasting);
       state.wines.push(w);
       toast(`${data.quantity} bouteille(s) ajoutée(s)`);
     }
@@ -601,6 +610,62 @@ async function onLabelPhoto(e) {
 $("#photo-input").onchange = onLabelPhoto;
 $("#gallery-input").onchange = onLabelPhoto;
 
+// ---------- Fiche de dégustation (IA + recherche en ligne) ----------
+function setTasting(w, t) {
+  if (t) w.degustation = t;
+  else delete w.degustation;
+}
+
+function tastingHtml(t) {
+  const row = (label, v) => (v ? `<div class="tasting-row"><span class="md-key">${label}</span> ${esc(v)}</div>` : "");
+  const date = new Date(t.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  return `${t.resume ? `<p class="tasting-resume">${esc(t.resume)}</p>` : ""}
+    ${row("Robe", t.robe)}${row("Nez", t.nez)}${row("Bouche", t.bouche)}${row("Finale", t.finale)}
+    ${row("Accords", t.accords?.join(", "))}${row("Service", t.service)}${row("Garde", t.garde)}${row("Critiques", t.notes)}
+    ${t.sources?.length ? `<div class="tasting-row"><span class="md-key">Sources</span> ${t.sources
+      .map((x) => `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.titre || x.url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0])}</a>`).join(" · ")}</div>` : ""}
+    <p class="muted small">Générée le ${esc(date)}${t.fiabilite ? ` — ${esc(t.fiabilite)}` : ""}. À vérifier : l'IA peut se tromper.</p>`;
+}
+
+function renderTasting() {
+  const t = pendingTasting;
+  $("#tasting-sheet").innerHTML = t ? tastingHtml(t) : "";
+  $("#tasting-sheet").hidden = !t;
+  $("#btn-tasting-clear").hidden = !t;
+  $("#btn-tasting").querySelector("span").textContent = t ? "Régénérer la fiche" : "Générer avec recherche en ligne";
+}
+
+$("#btn-tasting").onclick = async (e) => {
+  const btn = e.currentTarget;
+  const data = readForm();
+  if (!data.cuvee && !data.domaine && !data.appellation) return toast("Renseignez d'abord la cuvée ou le domaine.");
+  const status = $("#tasting-status");
+  btn.disabled = true;
+  status.className = "small";
+  status.innerHTML = wineLoader("Recherche en ligne et rédaction de la fiche…");
+  try {
+    pendingTasting = await tastingSheet(aiConfig(), data);
+    formDirty = true;
+    renderTasting();
+    status.textContent = pendingTasting.web
+      ? "Fiche générée — enregistrez la fiche bouteille pour la conserver."
+      : "Recherche en ligne indisponible : fiche rédigée sans elle. Enregistrez pour la conserver.";
+    status.classList.add("msg-ok");
+  } catch (err) {
+    status.textContent = err.message;
+    status.classList.add("msg-err");
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+$("#btn-tasting-clear").onclick = () => {
+  pendingTasting = null;
+  formDirty = true;
+  renderTasting();
+  $("#tasting-status").textContent = "";
+};
+
 $("#btn-estimate").onclick = async (e) => {
   const btn = e.currentTarget;
   const data = readForm();
@@ -678,7 +743,7 @@ $("#btn-pair").onclick = async () => {
   btn.disabled = true;
   aiPart.innerHTML = wineLoader("Le sommelier affine la sélection…");
   // Présélection : les 25 bouteilles les plus pertinentes suffisent et accélèrent la réponse.
-  const candidates = ranked.slice(0, 25).map((r) => ({ ...r.wine, photo: undefined, photos: undefined, history: undefined, maturityLabel: r.maturity.label }));
+  const candidates = ranked.slice(0, 25).map((r) => ({ ...r.wine, photo: undefined, photos: undefined, degustation: undefined, history: undefined, maturityLabel: r.maturity.label }));
   try {
     const res = await pairWines(ai, meal, candidates, $("#use-web").checked);
     const byId = (id) => state.wines.find((w) => w.id === id);

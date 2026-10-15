@@ -437,6 +437,11 @@ legend { font-weight: 600; padding: 0 4px; }
 .credit a { color: inherit; }
 #region-chips .chip { display: inline-flex; align-items: center; }
 .map-toggle { margin: 4px 0 8px; }
+.tasting-sheet { margin: 6px 0 10px; overflow-wrap: anywhere; }
+.tasting-resume { margin: 4px 0 8px; }
+.tasting-row { margin: 4px 0; }
+.tasting-row a { color: var(--primary); }
+.tasting-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .md-row { border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; margin: 8px 0; background: var(--bg); }
 .md-row > div + div { margin-top: 3px; }
 .md-key { font-weight: 700; color: var(--primary); }

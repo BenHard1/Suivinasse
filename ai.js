@@ -354,3 +354,58 @@ export async function pairWines(ai, meal, cellar, useWeb) {
     .slice(0, 3);
   return { recommandations, conseil: String(data.conseil || ""), note };
 }
+
+// Fiche de dégustation d'une cuvée, appuyée sur une recherche en ligne (repli sans recherche si refusée).
+export async function tastingSheet(ai, wine) {
+  const req = {
+    json: true,
+    effort: "medium",
+    timeout: 90000,
+    system:
+      "Tu es un sommelier expert. Tu t'appuies sur ce que disent le domaine, les cavistes, les guides et les critiques ; " +
+      "tu n'inventes ni notes de critiques ni sources.",
+    text:
+      `Recherche en ligne des informations sur ce vin, puis rédige sa fiche de dégustation en français :\n${describe(wine)}\n\n` +
+      `Si le millésime est connu, décris ce millésime précis ; à défaut d'informations sur ce millésime, décris le style ` +
+      `habituel de la cuvée et indique-le dans "fiabilite".\n` +
+      `Réponds uniquement avec ce JSON (textes courts, "" si inconnu) :\n` +
+      `{"resume":"2 ou 3 phrases : style, terroir, vinification / élevage",` +
+      `"robe":"","nez":"","bouche":"","finale":"",` +
+      `"accords":["3 à 5 plats"],` +
+      `"service":"température et carafage",` +
+      `"garde":"potentiel de garde, avec années si possible",` +
+      `"notes":"notes de critiques réellement trouvées (ex : Wine Advocate 93), sinon \"\"",` +
+      `"fiabilite":"millésime précis | style général de la cuvée | estimation sans source",` +
+      `"sources":[{"titre":"","url":"https://…"}]}`,
+  };
+
+  let text;
+  let web = true;
+  try {
+    text = await complete(ai, { ...req, web: true });
+  } catch (err) {
+    if (/invalide|hors ligne|quota/i.test(err.message)) throw err;
+    text = await complete(ai, { ...req, web: false, timeout: 50000 });
+    web = false;
+  }
+  const d = extractJson(text);
+  const str = (v) => (v == null ? "" : String(v).trim());
+  return {
+    resume: str(d.resume),
+    robe: str(d.robe),
+    nez: str(d.nez),
+    bouche: str(d.bouche),
+    finale: str(d.finale),
+    accords: (Array.isArray(d.accords) ? d.accords : str(d.accords).split(/[,;]\s*/)).map(str).filter(Boolean).slice(0, 6),
+    service: str(d.service),
+    garde: str(d.garde),
+    notes: str(d.notes),
+    fiabilite: web ? str(d.fiabilite) : "estimation sans recherche en ligne",
+    sources: (Array.isArray(d.sources) ? d.sources : [])
+      .map((x) => (typeof x === "string" ? { titre: x, url: x } : { titre: str(x?.titre || x?.title), url: str(x?.url) }))
+      .filter((x) => /^https?:\/\/[^\s/…]+\.[^\s…]+$/.test(x.url)) // écarte les exemples du modèle (« https://… »)
+      .slice(0, 6),
+    web,
+    date: new Date().toISOString(),
+  };
+}
