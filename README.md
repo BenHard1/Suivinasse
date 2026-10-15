@@ -8,7 +8,7 @@ Web app (PWA) installable sur l'écran d'accueil du téléphone pour gérer sa c
 - **Ajouter** (bouton **+** en bas à droite de la page Cave) : fiche avec cuvée, domaine, région, appellation, cépages, millésime, fenêtre de dégustation, rangement « au frais », commentaire, et **nombre de bouteilles rentrées** (1, 3, 6, 12 ou libre). Si la même cuvée/millésime existe déjà, les bouteilles sont ajoutées à la fiche existante.
 - **Millésimes** : sur la fiche d'une bouteille, les autres millésimes de la même cuvée (même cuvée et domaine) apparaissent en onglets ; « + Millésime » ouvre une nouvelle fiche pré-remplie (catégorie, région, appellation, cépages, rangement) où il suffit d'indiquer l'année et le nombre de bouteilles.
 - **Fiche de dégustation** : sur la fiche d'une bouteille, « Générer avec recherche en ligne » demande à l'IA (clé des Réglages) de chercher la cuvée sur internet et de rédiger sa fiche : présentation, robe, nez, bouche, finale, accords, service, potentiel de garde, notes de critiques et sources. Elle est enregistrée avec la fiche ; repli sans recherche si celle-ci est refusée.
-- **Photos de la bouteille** : jusqu'à 6 photos par fiche (étiquette, contre-étiquette, capsule…), prises à l'appareil ou choisies dans la galerie ; un appui sur la miniature de la cave les affiche en plein écran (glisser pour passer de l'une à l'autre).
+- **Photos de la bouteille** : jusqu'à 6 photos en haute définition par fiche (étiquette, contre-étiquette, capsule…), prises à l'appareil ou choisies dans la galerie ; un appui sur la miniature de la cave les affiche en plein écran (glisser pour passer de l'une à l'autre).
 - **Reconnaissance photo** : photographiez l'étiquette ou choisissez une photo de la galerie, l'IA (Gemini ou Claude) pré-remplit la fiche et estime la fenêtre de dégustation.
 - **Maturité** : liste des vins à maturité, triés par urgence (apogée dépassée → à boire rapidement → à maturité).
 - **Accords mets & vins** : décrivez le repas ; des **suggestions immédiates** (sans IA, calculées sur le téléphone à partir de mots-clés du repas, du style de chaque vin et de sa maturité) s'affichent aussitôt, puis **l'avis du sommelier IA** (3 bouteilles maximum, avec explication et service) sur une présélection des 25 bouteilles les plus pertinentes. Recherche internet en option (plus lente), délai maximal pour ne jamais rester bloqué.
@@ -22,7 +22,7 @@ Web app (PWA) installable sur l'écran d'accueil du téléphone pour gérer sa c
 | Cave (fiches, quantités, commentaires, photos, catégories) | Base de données Supabase, une ligne par compte, protégée par des règles RLS (chaque compte ne lit/écrit que sa cave) + copie locale pour le hors-ligne | Navigateur du téléphone uniquement (`localStorage`) |
 | Mot de passe | Géré par Supabase Auth (haché, jamais visible) | — |
 | Clé API (Gemini ou Claude) | Dans le compte (métadonnées Supabase Auth, lisibles uniquement par l'utilisateur connecté) — retrouvée sur tous ses appareils, jamais incluse dans les exports | Navigateur du téléphone uniquement |
-| Photos de la bouteille | Jusqu'à 6 par fiche, réduites à 480 px et gardées dans la cave ; la photo d'étiquette est envoyée au moteur IA choisi le temps de l'analyse | idem |
+| Photos de la bouteille | Haute définition (jusqu'à 2560 px) dans Supabase Storage (seau privé `photos`, un dossier par compte) + copie sur l'appareil ; la cave ne garde qu'une miniature | Sur l'appareil uniquement (IndexedDB), envoyées dans le compte à la première connexion |
 
 Avec un compte, la cave suit l'utilisateur sur tous ses appareils ; hors ligne, les modifications sont gardées puis envoyées au retour du réseau.
 
@@ -31,7 +31,7 @@ Avec un compte, la cave suit l'utilisateur sur tous ses appareils ; hors ligne, 
 Les comptes reposent sur [Supabase](https://supabase.com) (offre gratuite suffisante). À faire une seule fois :
 
 1. Créer un compte sur supabase.com → **New project** (région Europe, notez le mot de passe de la base).
-2. **SQL Editor → New query** : coller le contenu de [`supabase/schema.sql`](supabase/schema.sql) → **Run**.
+2. **SQL Editor → New query** : coller le contenu de [`supabase/schema.sql`](supabase/schema.sql) → **Run** (crée la table des caves et l'espace de stockage des photos ; peut être relancé sans risque).
 3. **Authentication → URL Configuration** : mettre l'adresse du site (`https://benhard1.github.io/Suivinasse/`) dans *Site URL* et *Redirect URLs* (pour les liens de confirmation et de mot de passe oublié).
 4. *(Optionnel)* **Authentication → Sign In / Providers → Email** : désactiver *Confirm email* pour que les amis puissent se connecter sans valider leur e-mail.
 5. **Project Settings → API** : copier *Project URL* et la clé *anon public* dans [`config.js`](config.js).
@@ -66,6 +66,7 @@ Pour tester en local : `python3 -m http.server` puis ouvrir http://localhost:800
 
 - `index.html`, `styles.css`, `app.js` — interface et logique
 - `storage.js`, `config.js`, `supabase/schema.sql` — comptes et synchronisation
+- `photos.js` — photos haute définition (IndexedDB + Supabase Storage)
 - `assets/`, `icons/` — logo et icônes
 - `terroir.js`, `france-map.js` — données des régions viticoles et fond de carte des départements ([svg-maps](https://github.com/VictorCazanave/svg-maps) © Victor Cazanave, CC BY 4.0)
 - `pairing.js` — accords rapides sans IA (profils de vins, mots-clés des plats, maturité)

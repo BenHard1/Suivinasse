@@ -301,9 +301,14 @@ legend { font-weight: 600; padding: 0 4px; }
 /* L'image occupe tout l'écran disponible (agrandie si besoin), sans être déformée. */
 .photo-viewer img { position: absolute; inset: 56px 56px; width: calc(100% - 112px); height: calc(100% - 112px); object-fit: contain; }
 @media (max-width: 600px) { .photo-viewer img { inset: 56px 0; width: 100%; } }
+.photo-viewer img { cursor: zoom-in; }
+.photo-viewer.zoomed { display: block; overflow: auto; -webkit-overflow-scrolling: touch; }
+.photo-viewer.zoomed img { position: static; display: block; width: auto; height: auto; max-width: none; max-height: none; margin: auto; cursor: zoom-out; }
+.photo-viewer.zoomed .viewer-nav, .photo-viewer.zoomed .viewer-pos { display: none; }
+.photo-viewer.zoomed .viewer-close { position: fixed; z-index: 2; }
 .viewer-close {
   position: absolute; top: calc(10px + env(safe-area-inset-top)); right: 10px; width: 40px; height: 40px; border: 0; border-radius: 50%;
-  background: rgba(255, 255, 255, .15); color: #fff; font: 400 26px/1 system-ui, sans-serif; cursor: pointer;
+  background: rgba(0, 0, 0, .55); color: #fff; font: 400 26px/1 system-ui, sans-serif; cursor: pointer;
   display: flex; align-items: center; justify-content: center; padding: 0;
 }
 .viewer-nav {
@@ -313,6 +318,8 @@ legend { font-weight: 600; padding: 0 4px; }
 .viewer-nav.prev { left: 0; border-radius: 0 10px 10px 0; }
 .viewer-nav.next { right: 0; border-radius: 10px 0 0 10px; }
 .viewer-nav[hidden] { display: none; }
+.viewer-loading { position: absolute; top: calc(20px + env(safe-area-inset-top)); left: 0; right: 0; text-align: center; color: #fff; font-size: .85rem; opacity: .8; pointer-events: none; }
+.viewer-loading[hidden] { display: none; }
 .viewer-pos { position: absolute; bottom: calc(16px + env(safe-area-inset-bottom)); left: 0; right: 0; text-align: center; color: #fff; font-size: .9rem; }
 
 .result { margin-top: 14px; }

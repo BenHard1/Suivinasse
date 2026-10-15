@@ -25,6 +25,8 @@ async function client() {
   return sb;
 }
 
+export const supabase = client; // utilisé par photos.js (Supabase Storage)
+
 function readCache(key) {
   try {
     const s = JSON.parse(localStorage.getItem(key));

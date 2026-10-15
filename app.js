@@ -1,5 +1,6 @@
 import { recognizeLabel, estimateWindow, pairWines, tastingSheet, PROVIDERS } from "./ai.js";
 import * as store from "./storage.js";
+import { putPhoto, photoUrl, deletePhotos, syncPhotos, onPhotoError } from "./photos.js";
 import { rankForMeal, PROFILE_LABELS } from "./pairing.js";
 
 // ---------- Stockage ----------
@@ -243,7 +244,7 @@ function cardHtml(w) {
   const m = maturity(w);
   const sub = [w.appellation, w.millesime, w.cepages].filter(Boolean).join(" · ");
   return `<div class="card ${w.quantity ? "" : "empty"}" data-id="${w.id}">
-    ${photosOf(w).length ? `<button class="thumb-btn" data-photos aria-label="Voir les photos"><img class="thumb" src="${photosOf(w)[0]}" alt="">${photosOf(w).length > 1 ? `<span class="thumb-count">${photosOf(w).length}</span>` : ""}</button>` : ""}
+    ${photosOf(w).length ? `<button class="thumb-btn" data-photos aria-label="Voir les photos"><img class="thumb" src="${photosOf(w)[0].thumb}" alt="">${photosOf(w).length > 1 ? `<span class="thumb-count">${photosOf(w).length}</span>` : ""}</button>` : ""}
     <div class="info" data-edit>
       <div class="title">${esc(wineTitle(w))}</div>
       ${sub ? `<div class="sub">${esc(sub)}</div>` : ""}
@@ -337,6 +338,10 @@ function resetForm() {
   $("#region-list").innerHTML = [...new Set([...used, ...REGIONS])]
     .sort((a, b) => a.localeCompare(b, "fr")).map((r) => `<option value="${esc(r)}">`).join("");
   setQty(6);
+  // Photos ajoutées à une fiche finalement non enregistrée.
+  addedPhotoIds.forEach((id) => dropPhotos.add(id));
+  addedPhotoIds.clear();
+  flushPhotoDeletes();
   pendingPhotos = [];
   renderPhotos();
   pendingTasting = null;
@@ -457,6 +462,8 @@ form.onsubmit = (e) => {
     const w = state.wines.find((x) => x.id === id);
     const delta = data.quantity - (w.quantity || 0);
     Object.assign(w, data);
+    const keep = new Set(photoIds(pendingPhotos));
+    photoIds(photosOf(w)).forEach((id) => keep.has(id) || dropPhotos.add(id));
     setPhotos(w, pendingPhotos);
     setTasting(w, pendingTasting);
     if (delta) (w.history ??= []).push({ date: new Date().toISOString(), delta });
@@ -488,6 +495,7 @@ form.onsubmit = (e) => {
     }
   }
   save();
+  flushPhotoDeletes();
   form.id.value = "";
   activeCat = "Toutes";
   show("cave");
@@ -504,6 +512,7 @@ $("#btn-delete").onclick = () => {
   const w = state.wines.find((x) => x.id === id);
   if (!w || !confirm(`Supprimer définitivement « ${wineTitle(w)} » ?`)) return;
   state.wines = state.wines.filter((x) => x.id !== id);
+  photoIds(photosOf(w)).forEach((id) => dropPhotos.add(id));
   save();
   form.id.value = "";
   show("cave");
@@ -511,24 +520,41 @@ $("#btn-delete").onclick = () => {
 };
 
 // ---------- Photos ----------
+// La cave ne garde qu'une miniature par photo ; la photo en haute définition est rangée à part
+// (photos.js : sur l'appareil, et dans le compte Supabase si connecté).
+// Format : { id, thumb } ; les anciennes fiches ont des images directement dans `photos` ou `photo`.
 const MAX_PHOTOS = 6;
-const PHOTO_SIZE = 480; // px, côté le plus long : assez pour regarder l'étiquette, léger à stocker
+const PHOTO_SIZE = 2560; // px, côté le plus long : l'étiquette reste lisible une fois agrandie
+const THUMB_SIZE = 200;
 
-// Les anciennes fiches n'ont qu'une miniature dans `photo`.
 function photosOf(w) {
-  return w.photos?.length ? w.photos : w.photo ? [w.photo] : [];
+  const list = w.photos?.length ? w.photos : w.photo ? [w.photo] : [];
+  return list.map((p) => (typeof p === "string" ? { thumb: p, inline: p } : p));
 }
 
 function setPhotos(w, photos) {
   delete w.photo;
-  if (photos.length) w.photos = photos.slice(0, MAX_PHOTOS);
+  const kept = photos.slice(0, MAX_PHOTOS);
+  if (kept.length) w.photos = kept.map((p) => (p.id ? { id: p.id, thumb: p.thumb } : p.inline));
   else delete w.photos;
+  // Photos ajoutées pendant la saisie puis retirées (ou au-delà du maximum) : supprimées du stockage.
+  const used = new Set(kept.map((p) => p.id).filter(Boolean));
+  addedPhotoIds.forEach((id) => used.has(id) || dropPhotos.add(id));
+  addedPhotoIds.clear();
+}
+
+const photoIds = (list) => list.map((p) => p.id).filter(Boolean);
+const addedPhotoIds = new Set(); // ajoutées depuis l'ouverture de la fiche
+const dropPhotos = new Set(); // à supprimer du stockage
+function flushPhotoDeletes() {
+  if (dropPhotos.size) deletePhotos([...dropPhotos]);
+  dropPhotos.clear();
 }
 
 function renderPhotos() {
   const grid = $("#photo-grid");
   grid.innerHTML = pendingPhotos
-    .map((src, i) => `<div class="ph"><button type="button" class="ph-img" data-view="${i}"><img src="${src}" alt="Photo ${i + 1}"></button>` +
+    .map((p, i) => `<div class="ph"><button type="button" class="ph-img" data-view="${i}"><img src="${p.thumb}" alt="Photo ${i + 1}"></button>` +
       `<button type="button" class="ph-del" data-del="${i}" aria-label="Supprimer la photo">×</button></div>`)
     .join("");
   grid.querySelectorAll("[data-view]").forEach((b) => (b.onclick = () => openViewer(pendingPhotos, +b.dataset.view)));
@@ -541,9 +567,15 @@ function renderPhotos() {
   $("#photos-count").textContent = pendingPhotos.length ? `${pendingPhotos.length}/${MAX_PHOTOS}` : "";
 }
 
-function addPhoto(src) {
+async function addPhoto(file) {
   if (pendingPhotos.length >= MAX_PHOTOS) return false;
-  pendingPhotos.push(src);
+  const img = await loadImage(file);
+  const id = `${uid()}${Math.random().toString(36).slice(2, 6)}`;
+  const thumb = scaled(img, THUMB_SIZE).toDataURL("image/jpeg", 0.75);
+  const full = await new Promise((r) => scaled(img, PHOTO_SIZE).toBlob(r, "image/jpeg", 0.88));
+  await putPhoto(id, full);
+  addedPhotoIds.add(id);
+  pendingPhotos.push({ id, thumb });
   formDirty = true;
   renderPhotos();
   return true;
@@ -555,7 +587,7 @@ $("#bottle-photos-input").onchange = async (e) => {
   let skipped = 0;
   for (const file of files) {
     try {
-      if (!addPhoto(await resizeImage(file, PHOTO_SIZE, 0.75))) skipped++;
+      if (!(await addPhoto(file))) skipped++;
     } catch (err) {
       toast(err.message);
     }
@@ -563,25 +595,64 @@ $("#bottle-photos-input").onchange = async (e) => {
   if (skipped) toast(`${MAX_PHOTOS} photos maximum par bouteille.`);
 };
 
+onPhotoError((msg) => toast(msg));
+
 // Visionneuse plein écran (appui pour fermer, flèches pour naviguer).
-let viewer = { photos: [], i: 0 };
+// La miniature s'affiche aussitôt, remplacée par la photo en haute définition dès qu'elle est chargée.
+let viewer = { photos: [], i: 0, url: null, token: 0 };
 function openViewer(photos, i) {
-  viewer = { photos, i };
+  viewer.photos = photos;
+  viewer.i = i;
   showViewerPhoto();
   $("#photo-viewer").hidden = false;
 }
-function showViewerPhoto() {
+async function showViewerPhoto() {
   const { photos, i } = viewer;
-  $("#viewer-img").src = photos[i];
+  const p = photos[i];
+  const img = $("#viewer-img");
+  const token = ++viewer.token;
+  img.src = p.inline || p.thumb;
   $("#viewer-pos").textContent = photos.length > 1 ? `${i + 1} / ${photos.length}` : "";
   $("#viewer-prev").hidden = $("#viewer-next").hidden = photos.length < 2;
+  $("#viewer-loading").hidden = !p.id;
+  if (!p.id) return;
+  try {
+    const url = await photoUrl(p.id);
+    if (token !== viewer.token) return url && URL.revokeObjectURL(url);
+    if (url) {
+      if (viewer.url) URL.revokeObjectURL(viewer.url);
+      viewer.url = url;
+      img.src = url;
+    }
+  } catch (err) {
+    if (token === viewer.token) toast(err.message);
+  } finally {
+    if (token === viewer.token) $("#viewer-loading").hidden = true;
+  }
 }
 function stepViewer(d) {
+  $("#photo-viewer").classList.remove("zoomed");
   viewer.i = (viewer.i + d + viewer.photos.length) % viewer.photos.length;
   showViewerPhoto();
 }
-const closeViewer = () => ($("#photo-viewer").hidden = true);
+const closeViewer = () => {
+  $("#photo-viewer").hidden = true;
+  $("#photo-viewer").classList.remove("zoomed");
+  viewer.token++;
+};
 $("#photo-viewer").onclick = closeViewer;
+// Appui sur la photo : taille réelle (on fait défiler pour lire l'étiquette), nouvel appui pour revenir.
+$("#viewer-img").onclick = (e) => {
+  e.stopPropagation();
+  const v = $("#photo-viewer");
+  const img = e.currentTarget;
+  const rect = img.getBoundingClientRect();
+  const fx = (e.clientX - rect.left) / rect.width;
+  const fy = (e.clientY - rect.top) / rect.height;
+  v.classList.toggle("zoomed");
+  // Zoom centré sur l'endroit touché.
+  if (v.classList.contains("zoomed")) v.scrollTo(fx * img.offsetWidth - v.clientWidth / 2, fy * img.offsetHeight - v.clientHeight / 2);
+};
 document.addEventListener("keydown", (e) => {
   if ($("#photo-viewer").hidden) return;
   if (e.key === "Escape") closeViewer();
@@ -594,27 +665,35 @@ let touchX = null;
 $("#photo-viewer").addEventListener("touchstart", (e) => (touchX = e.touches[0].clientX), { passive: true });
 $("#photo-viewer").addEventListener("touchend", (e) => {
   const dx = e.changedTouches[0].clientX - (touchX ?? 0);
-  if (Math.abs(dx) > 50 && viewer.photos.length > 1) {
+  if (Math.abs(dx) > 50 && viewer.photos.length > 1 && !$("#photo-viewer").classList.contains("zoomed")) {
     stepViewer(dx < 0 ? 1 : -1);
     e.preventDefault(); // pas de fermeture après un glissement
   }
 });
 
-function resizeImage(file, max, quality = 0.85) {
+function loadImage(file) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
-      const scale = Math.min(1, max / Math.max(img.width, img.height));
-      const c = document.createElement("canvas");
-      c.width = Math.round(img.width * scale);
-      c.height = Math.round(img.height * scale);
-      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
       URL.revokeObjectURL(img.src);
-      resolve(c.toDataURL("image/jpeg", quality));
+      resolve(img);
     };
     img.onerror = () => reject(new Error("Image illisible"));
     img.src = URL.createObjectURL(file);
   });
+}
+
+function scaled(img, max) {
+  const scale = Math.min(1, max / Math.max(img.width, img.height));
+  const c = document.createElement("canvas");
+  c.width = Math.round(img.width * scale);
+  c.height = Math.round(img.height * scale);
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+  return c;
+}
+
+async function resizeImage(file, max, quality = 0.85) {
+  return scaled(await loadImage(file), max).toDataURL("image/jpeg", quality);
 }
 
 async function onLabelPhoto(e) {
@@ -625,7 +704,7 @@ async function onLabelPhoto(e) {
   try {
     const big = await resizeImage(file, 1280);
     // La photo de l'étiquette rejoint les photos de la bouteille.
-    addPhoto(await resizeImage(file, PHOTO_SIZE, 0.75));
+    await addPhoto(file);
     status.innerHTML = wineLoader("Analyse de l'étiquette en cours…");
     const result = await recognizeLabel(
       aiConfig(),
@@ -1162,6 +1241,7 @@ async function enterApp() {
     } catch {}
   }
   $("#auth").hidden = true;
+  syncPhotos().catch(() => {});
   activeCat = "Toutes";
   resetForm();
   show("cave");
