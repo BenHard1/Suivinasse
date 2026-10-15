@@ -145,6 +145,7 @@ function show(view) {
   document.querySelectorAll(".tabbar button").forEach((b) => b.classList.toggle("active", b.dataset.view === tab));
   $("#total-count").hidden = tab !== "cave";
   $("#fab-add").hidden = view !== "cave";
+  $("#btn-back").hidden = view !== "add";
   $("#view-title").textContent = view === "add" && $("#wine-form").id.value ? "Modifier la fiche" : TITLES[view];
   if (view === "add" && !$("#wine-form").id.value) resetForm();
   render();
@@ -493,6 +494,11 @@ form.onsubmit = (e) => {
 };
 
 $("#btn-cancel").onclick = () => { form.id.value = ""; show("cave"); };
+$("#btn-back").onclick = () => {
+  if (!confirmLeave()) return;
+  form.id.value = "";
+  show("cave");
+};
 $("#btn-delete").onclick = () => {
   const id = form.id.value;
   const w = state.wines.find((x) => x.id === id);

@@ -124,6 +124,14 @@ html.ios-standalone {
 
 .title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; max-width: 720px; margin: 14px auto 0; padding: 0 16px; }
 .title-row .view-title { margin: 0; padding: 0; }
+.title-left { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.back-btn {
+  flex: none; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;
+  margin-left: -8px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--primary); cursor: pointer;
+}
+.back-btn .ico { width: 26px; height: 26px; }
+.back-btn:active { background: var(--surface); }
+.back-btn[hidden] { display: none; }
 .count-pill {
   display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; flex: none;
   border: 1px solid var(--border); background: var(--surface); color: var(--primary);
