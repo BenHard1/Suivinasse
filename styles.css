@@ -395,12 +395,13 @@ legend { font-weight: 600; padding: 0 4px; }
 }
 .tabbar button {
   position: relative; flex: 1; min-width: 0; background: none; border: none; color: #f8f1e7;
-  font: inherit; font-size: .62rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase;
+  font: inherit; font-size: .58rem; font-weight: 700; letter-spacing: .01em; text-transform: uppercase; white-space: nowrap;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px 0 4px;
 }
 .tabbar button > * { position: relative; z-index: 2; }
 .tabbar .ico { width: 24px; height: 24px; stroke-width: 1.6; }
-.tabbar .tab-long span { font-size: .56rem; letter-spacing: 0; white-space: nowrap; } /* « Producteurs » tient dans l'onglet */
+/* Très petits écrans : libellés réduits pour que « Vignerons » tienne comme les autres. */
+@media (max-width: 350px) { .tabbar button:not(.cave-tab) { font-size: .5rem; letter-spacing: 0; } }
 .tabbar button:not(.cave-tab)::before {
   content: ""; position: absolute; z-index: 1; left: 50%; width: 54px; margin-left: -27px;
   top: -8px; bottom: calc(-1 * var(--bar-pad));

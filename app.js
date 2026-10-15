@@ -200,7 +200,7 @@ scroller.addEventListener("scroll", () => {
 }, { passive: true });
 
 // ---------- Navigation ----------
-const TITLES = { cave: "Ma cave", add: "Ajouter", maturity: "À maturité", pairing: "Accords mets & vins", terroir: "Cépages & terroirs", settings: "Réglages", producers: "Producteurs" };
+const TITLES = { cave: "Ma cave", add: "Ajouter", maturity: "À maturité", pairing: "Accords mets & vins", terroir: "Cépages & terroirs", settings: "Réglages", producers: "Vignerons" };
 function show(view) {
   document.querySelectorAll(".view").forEach((v) => v.classList.toggle("active", v.id === `view-${view}`));
   // La fiche d'ajout / modification dépend de la cave : l'onglet Cave reste mis en avant.
