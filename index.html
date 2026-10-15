@@ -37,6 +37,7 @@
   </div>
 
   <header class="topbar">
+    <button type="button" id="btn-settings" class="topbar-settings" aria-label="Réglages" title="Réglages"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></svg></button>
     <img class="brand-icon" src="assets/logo-text-on-dark.jpg" alt="" aria-hidden="true">
     <img class="brand-full" src="assets/logo-on-dark.jpg" alt="Wine in my Cellar">
     <div class="topbar-right">
@@ -210,6 +211,11 @@
       <div id="region-detail"></div>
     </section>
 
+    <section id="view-producers" class="view">
+      <p class="muted small">Les domaines de votre cave. Touchez un producteur pour voir ses bouteilles et son site internet.</p>
+      <div id="producer-list"></div>
+    </section>
+
     <section id="view-settings" class="view">
       <div id="account-box">
         <h2>Mon compte</h2>
@@ -266,7 +272,7 @@
       <span class="cave-label">Ma cave</span>
     </button>
     <button data-view="terroir"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="10" r="2.6"/><circle cx="14.5" cy="10" r="2.6"/><circle cx="6.5" cy="14.8" r="2.6"/><circle cx="12" cy="14.8" r="2.6"/><circle cx="9.3" cy="19.4" r="2.6"/><path d="M12 7.4V5c0-1.3.8-2.4 2-3"/><path d="M14 4.5c1.6-1.4 4-1.6 6-.5-1.3 1.8-3.8 2.4-6 .5Z"/></svg><span>Terroirs</span></button>
-    <button data-view="settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></svg><span>Réglages</span></button>
+    <button data-view="producers" class="tab-long"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V10l7-5 7 5v11"/><path d="M9 21v-6h6v6"/><path d="M12 5V3"/></svg><span>Producteurs</span></button>
   </nav>
 
   <!-- Hors de la zone défilante pour rester en place ; visible uniquement sur la page Cave. -->

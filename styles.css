@@ -105,12 +105,21 @@ html.ios-standalone {
 }
 .brand-full, .brand-icon { position: absolute; display: block; width: auto; transform-origin: 0 0; transition: transform .35s ease, opacity .3s ease; }
 .brand-full { height: var(--full-h); top: calc(env(safe-area-inset-top) + (var(--head-h) - var(--full-h)) / 2); left: calc(50% - var(--full-h) * .96515); }
+/* Le logo réduit se place à droite du bouton Réglages (décalage --logo-shift). */
+:root { --logo-shift: 44px; }
 .brand-icon {
-  height: var(--text-h); top: calc(env(safe-area-inset-top) + var(--text-top)); left: 16px; opacity: 0;
-  transform: translate(var(--icon-tx), var(--icon-ty)) scale(var(--icon-s));
+  height: var(--text-h); top: calc(env(safe-area-inset-top) + var(--text-top)); left: calc(16px + var(--logo-shift)); opacity: 0;
+  transform: translate(calc(var(--icon-tx) - var(--logo-shift)), var(--icon-ty)) scale(var(--icon-s));
 }
+.topbar-settings {
+  position: absolute; z-index: 1; left: 8px; top: env(safe-area-inset-top); bottom: 0; margin: auto 0;
+  width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; background: none; color: inherit; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.topbar-settings .ico { width: 24px; height: 24px; }
+.topbar-settings.active { background: rgba(255, 255, 255, .16); }
 .topbar.compact { height: calc(var(--head-compact) + env(safe-area-inset-top)); box-shadow: 0 2px 10px rgba(0, 0, 0, .25); }
-.topbar.compact .brand-full { opacity: 0; transform: translate(var(--full-tx), var(--full-ty)) scale(var(--full-s)); }
+.topbar.compact .brand-full { opacity: 0; transform: translate(calc(var(--full-tx) + var(--logo-shift)), var(--full-ty)) scale(var(--full-s)); }
 .topbar.compact .brand-icon { opacity: 1; transform: none; }
 .topbar-right { position: relative; display: flex; align-items: center; gap: 6px; }
 @media (prefers-reduced-motion: reduce) { .topbar, .brand-full, .brand-icon { transition: none; } }
@@ -391,6 +400,7 @@ legend { font-weight: 600; padding: 0 4px; }
 }
 .tabbar button > * { position: relative; z-index: 2; }
 .tabbar .ico { width: 24px; height: 24px; stroke-width: 1.6; }
+.tabbar .tab-long span { font-size: .56rem; letter-spacing: 0; white-space: nowrap; } /* « Producteurs » tient dans l'onglet */
 .tabbar button:not(.cave-tab)::before {
   content: ""; position: absolute; z-index: 1; left: 50%; width: 54px; margin-left: -27px;
   top: -8px; bottom: calc(-1 * var(--bar-pad));
@@ -504,3 +514,21 @@ legend { font-weight: 600; padding: 0 4px; }
 .reco-why { font-size: .9rem; padding: 0 4px 6px; }
 .reco-service { color: var(--muted); font-size: .85rem; }
 .reco-tip { background: var(--surface); border-left: 3px solid var(--accent); border-radius: 8px; padding: 8px 12px; font-size: .9rem; }
+
+/* Producteurs */
+.producer { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); margin: 8px 0; overflow: hidden; }
+.producer-head {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px; border: 0; background: none;
+  color: var(--text); font: inherit; text-align: left; cursor: pointer;
+}
+.producer-head .p-name { flex: 1; min-width: 0; font-weight: 600; }
+.producer-head .p-sub { display: block; font-weight: 400; color: var(--muted); font-size: .85rem; }
+.producer-head .p-count { flex: none; color: var(--primary); font-weight: 700; font-size: .9rem; }
+.producer-head .chev { flex: none; transition: transform .2s; color: var(--muted); }
+.producer.open .producer-head .chev { transform: rotate(90deg); }
+.producer-body { padding: 0 12px 12px; }
+.producer-site { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px; }
+.producer-site a { color: var(--primary); font-weight: 600; overflow-wrap: anywhere; }
+.producer-site .site-edit { display: flex; gap: 6px; width: 100%; }
+.producer-site .site-edit input { margin: 0; flex: 1; min-width: 0; }
+.site-link { display: inline-flex; align-items: center; gap: 4px; }

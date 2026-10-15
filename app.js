@@ -1,4 +1,4 @@
-import { recognizeLabel, estimateWindow, pairWines, tastingSheet, PROVIDERS } from "./ai.js";
+import { recognizeLabel, estimateWindow, pairWines, tastingSheet, findProducerSite, PROVIDERS } from "./ai.js";
 import * as store from "./storage.js";
 import { putPhoto, photoUrl, deletePhotos, syncPhotos, onPhotoError } from "./photos.js";
 import { rankForMeal, PROFILE_LABELS } from "./pairing.js";
@@ -109,7 +109,7 @@ function wineTitle(w) {
 // Estimation du temps restant : durée moyenne des derniers appels du même type sur cet appareil
 // (par moteur), ou valeur par défaut tant qu'il n'y en a pas eu.
 const AI_TIMES_KEY = "macave.aiTimes";
-const AI_DEFAULT_S = { label: 12, window: 8, tasting: 45, pairing: 20, pairingWeb: 35 };
+const AI_DEFAULT_S = { label: 12, window: 8, tasting: 45, pairing: 20, pairingWeb: 35, site: 15 };
 
 function aiTimes() {
   try { return JSON.parse(localStorage.getItem(AI_TIMES_KEY)) || {}; } catch { return {}; }
@@ -200,12 +200,13 @@ scroller.addEventListener("scroll", () => {
 }, { passive: true });
 
 // ---------- Navigation ----------
-const TITLES = { cave: "Ma cave", add: "Ajouter", maturity: "À maturité", pairing: "Accords mets & vins", terroir: "Cépages & terroirs", settings: "Réglages" };
+const TITLES = { cave: "Ma cave", add: "Ajouter", maturity: "À maturité", pairing: "Accords mets & vins", terroir: "Cépages & terroirs", settings: "Réglages", producers: "Producteurs" };
 function show(view) {
   document.querySelectorAll(".view").forEach((v) => v.classList.toggle("active", v.id === `view-${view}`));
   // La fiche d'ajout / modification dépend de la cave : l'onglet Cave reste mis en avant.
   const tab = view === "add" ? "cave" : view;
   document.querySelectorAll(".tabbar button").forEach((b) => b.classList.toggle("active", b.dataset.view === tab));
+  $("#btn-settings").classList.toggle("active", view === "settings");
   $("#total-count").hidden = tab !== "cave";
   $("#fab-add").hidden = view !== "cave";
   $("#btn-back").hidden = view !== "add";
@@ -215,6 +216,7 @@ function show(view) {
   scroller.scrollTo(0, 0);
 }
 document.querySelectorAll(".tabbar button").forEach((b) => (b.onclick = () => show(b.dataset.view)));
+$("#btn-settings").onclick = () => show("settings");
 $("#fab-add").onclick = () => {
   $("#wine-form").id.value = "";
   show("add");
@@ -1225,6 +1227,108 @@ function render() {
   if ($("#view-maturity").classList.contains("active")) renderMaturity();
   if ($("#view-settings").classList.contains("active")) renderSettings();
   if ($("#view-terroir").classList.contains("active")) renderTerroir();
+  if ($("#view-producers").classList.contains("active")) renderProducers();
+}
+
+// ---------- Producteurs ----------
+// Regroupement par domaine (sans tenir compte des accents ni des majuscules) ; les sites internet
+// sont gardés dans la cave (state.producers[clé].site), donc synchronisés avec le compte.
+const NO_PRODUCER = "Producteur non renseigné";
+const producerKey = (name) => norm(name).replace(/\s+/g, " ").trim();
+const openProducers = new Set();
+const ICON_GLOBE = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z"/></svg>';
+
+function producerGroups() {
+  const groups = new Map();
+  for (const w of state.wines) {
+    const key = producerKey(w.domaine) || "";
+    if (!groups.has(key)) groups.set(key, { key, names: {}, wines: [] });
+    const g = groups.get(key);
+    const n = (w.domaine || "").trim();
+    if (n) g.names[n] = (g.names[n] || 0) + 1;
+    g.wines.push(w);
+  }
+  return [...groups.values()]
+    .map((g) => ({ ...g, name: Object.entries(g.names).sort((a, b) => b[1] - a[1])[0]?.[0] || NO_PRODUCER }))
+    .sort((a, b) => (a.key === "") - (b.key === "") || a.name.localeCompare(b.name, "fr"));
+}
+
+const siteLabel = (url) => url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
+
+function renderProducers() {
+  const el = $("#producer-list");
+  const groups = producerGroups();
+  if (!groups.length) {
+    el.innerHTML = `<p class="empty-state">Aucun producteur pour l'instant.<br>Ajoutez des bouteilles avec leur domaine.</p>`;
+    return;
+  }
+  el.innerHTML = groups.map((g) => {
+    const site = state.producers?.[g.key]?.site || "";
+    const regions = [...new Set(g.wines.map((w) => (w.region || "").trim()).filter(Boolean))].join(", ");
+    const open = openProducers.has(g.key);
+    const wines = [...g.wines].sort((a, b) => wineTitle(a).localeCompare(wineTitle(b), "fr") || (a.millesime ?? 0) - (b.millesime ?? 0));
+    return `<div class="producer ${open ? "open" : ""}" data-key="${esc(g.key)}">
+      <button type="button" class="producer-head" aria-expanded="${open}">
+        <span class="p-name">${esc(g.name)}${regions ? `<span class="p-sub">${esc(regions)}</span>` : ""}</span>
+        ${site ? `<span class="muted" title="Site internet connu">${ICON_GLOBE}</span>` : ""}
+        <span class="p-count">${bottles(g.wines)}</span>
+        <svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+      </button>
+      ${open ? `<div class="producer-body">
+        ${g.key ? `<div class="producer-site">
+          ${site ? `<a class="site-link" href="${esc(site)}" target="_blank" rel="noopener">${ICON_GLOBE}${esc(siteLabel(site))}</a>` : `<span class="muted small">Pas de site internet enregistré.</span>`}
+          <div class="site-edit">
+            <input type="url" inputmode="url" placeholder="https://… (site du producteur)" value="${esc(site)}" data-site-input aria-label="Site internet de ${esc(g.name)}">
+            <button type="button" class="btn btn-ghost btn-small" data-site-ai title="Rechercher le site avec l'IA">${ICON_GLOBE}<span>Trouver</span></button>
+          </div>
+          <div class="small site-status" style="width:100%"></div>
+        </div>` : ""}
+        ${wines.map(cardHtml).join("")}
+      </div>` : ""}
+    </div>`;
+  }).join("");
+
+  el.querySelectorAll(".producer").forEach((box) => {
+    const key = box.dataset.key;
+    box.querySelector(".producer-head").onclick = () => {
+      openProducers.has(key) ? openProducers.delete(key) : openProducers.add(key);
+      renderProducers();
+    };
+    const input = box.querySelector("[data-site-input]");
+    if (input) input.onchange = () => setProducerSite(key, input.value);
+    const ai = box.querySelector("[data-site-ai]");
+    if (ai) ai.onclick = async () => {
+      const g = producerGroups().find((x) => x.key === key);
+      const status = box.querySelector(".site-status");
+      ai.disabled = true;
+      const timer = showAiLoader(status, `Recherche du site de ${g.name}…`, "site");
+      try {
+        const site = await findProducerSite(aiConfig(), g.name, g.wines.find((w) => w.region)?.region);
+        timer.done();
+        if (site) {
+          setProducerSite(key, site);
+          toast(`Site trouvé : ${siteLabel(site)}`);
+        } else {
+          status.textContent = "Aucun site officiel trouvé pour ce producteur.";
+        }
+      } catch (err) {
+        status.textContent = err.message;
+      } finally {
+        ai.disabled = false;
+      }
+    };
+    bindCards(box);
+  });
+}
+
+function setProducerSite(key, value) {
+  let site = value.trim();
+  if (site && !/^https?:\/\//i.test(site)) site = `https://${site}`;
+  state.producers ??= {};
+  if (site) state.producers[key] = { ...state.producers[key], site };
+  else delete state.producers[key];
+  save();
+  renderProducers();
 }
 
 // ---------- Comptes ----------

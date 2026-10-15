@@ -13,7 +13,8 @@ Web app (PWA) installable sur l'écran d'accueil du téléphone pour gérer sa c
 - **Maturité** : liste des vins à maturité, triés par urgence (apogée dépassée → à boire rapidement → à maturité).
 - **Accords mets & vins** : décrivez le repas ; des **suggestions immédiates** (sans IA, calculées sur le téléphone à partir de mots-clés du repas, du style de chaque vin et de sa maturité) s'affichent aussitôt, puis **l'avis du sommelier IA** (3 bouteilles maximum, avec explication et service) sur une présélection des 25 bouteilles les plus pertinentes. Recherche internet en option (plus lente), délai maximal pour ne jamais rester bloqué.
 - **Cépages & terroirs** : carte de France interactive des régions viticoles ; un appui sur une région affiche ses cépages rouges et blancs, son terroir, ses appellations phares, ses styles et les bouteilles de la cave qui en viennent ; l'interrupteur « Dans ma cave » ne garde en couleur que les régions représentées dans la cave, avec leur nombre de bouteilles.
-- **Réglages** : moteur IA et clé API, gestion des catégories, export/import JSON.
+- **Producteurs** (onglet de la barre du bas) : liste des domaines de la cave avec leur nombre de bouteilles ; un appui affiche leurs bouteilles et leur site internet, saisi à la main ou trouvé par l'IA (bouton « Trouver », recherche en ligne). Les sites sont enregistrés avec la cave.
+- **Réglages** (bouton en haut à gauche de l'en-tête) : moteur IA et clé API, gestion des catégories, export/import JSON.
 
 ## Où sont stockées les données ?
 

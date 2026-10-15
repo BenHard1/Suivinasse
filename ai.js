@@ -261,6 +261,28 @@ export async function recognizeLabel(ai, image, categories) {
   return extractJson(text);
 }
 
+// Site internet officiel d'un producteur (recherche en ligne). Retourne "" si introuvable.
+export async function findProducerSite(ai, producer, region) {
+  const req = {
+    json: true,
+    effort: "low",
+    timeout: 60000,
+    text:
+      `Trouve l'adresse du site internet officiel de ce producteur de vin ou de spiritueux : ${producer}` +
+      (region ? ` (${region})` : "") + `.\n` +
+      `Uniquement le site du producteur lui-même (pas un caviste, un guide ni un réseau social). ` +
+      `Réponds uniquement avec ce JSON : {"site":"https://…"} ou {"site":""} si tu ne le trouves pas avec certitude.`,
+  };
+  const text = await complete(ai, { ...req, web: true });
+  let site = "";
+  try {
+    site = String(extractJson(text).site || "");
+  } catch {
+    site = text.match(/https?:\/\/[^\s"')]+/)?.[0] || "";
+  }
+  return /^https?:\/\/[^\s/…]+\.[^\s…]+$/.test(site) ? site : "";
+}
+
 export async function estimateWindow(ai, wine) {
   const text = await complete(ai, {
     json: true,
